@@ -5,10 +5,9 @@ import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
 import csv from 'csv-parser';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry?url';
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.js?url";
 
-// Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface ProcessedContent {
