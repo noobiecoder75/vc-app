@@ -5,7 +5,10 @@ import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
 import csv from 'csv-parser';
-import pdfParse from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
 
 interface ProcessedContent {
   type: string;
@@ -231,35 +234,47 @@ ${result.value.substring(0, 500)}${result.value.length > 500 ? '...' : ''}`;
           console.log(`📄 Processing PDF file: ${file.name} (${file.size} bytes)`);
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
-          // Use pdf-parse to extract text
-          const pdfData = await pdfParse(arrayBuffer);
+          // Use pdfjs-dist to extract text
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          const pdf = await loadingTask.promise;
           
-          const wordCount = pdfData.text.split(/\s+/).filter(word => word.length > 0).length;
-          const pages = pdfData.numpages;
+          const numPages = pdf.numPages;
+          let fullText = '';
+          
+          // Extract text from all pages
+          for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str)
+              .join(' ');
+            fullText += pageText + '\n';
+          }
+          
+          const wordCount = fullText.split(/\s+/).filter(word => word.length > 0).length;
           
           const content = `PDF Document Analysis:
-- Pages: ${pages}
+- Pages: ${numPages}
 - Word count: ${wordCount}
-- Character count: ${pdfData.text.length}
+- Character count: ${fullText.length}
 
 Content preview:
-${pdfData.text.substring(0, 500)}${pdfData.text.length > 500 ? '...' : ''}`;
+${fullText.substring(0, 500)}${fullText.length > 500 ? '...' : ''}`;
           
-          console.log(`✅ PDF processed successfully: ${pages} pages, ${wordCount} words`);
+          console.log(`✅ PDF processed successfully: ${numPages} pages, ${wordCount} words`);
           resolve({
             type: 'pdf',
             content,
             metadata: { 
-              pages, 
+              pages: numPages, 
               wordCount, 
-              charCount: pdfData.text.length,
-              fullText: pdfData.text,
-              info: pdfData.info
+              charCount: fullText.length,
+              fullText: fullText.trim()
             }
           });
         } catch (error) {
           logError('PDF Processing', error, { fileName: file.name, fileSize: file.size });
-          // Fallback to basic info if pdf-parse fails
+          // Fallback to basic info if PDF processing fails
           const fallbackContent = `PDF file processed (text extraction failed):
 - File size: ${(file.size / 1024).toFixed(2)} KB
 - Status: Could not extract text content
