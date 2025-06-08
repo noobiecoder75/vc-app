@@ -6,10 +6,7 @@ import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
 import csv from 'csv-parser';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.js?url';
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+import 'pdfjs-dist/build/pdf.worker.entry';
 
 interface ProcessedContent {
   type: string;
