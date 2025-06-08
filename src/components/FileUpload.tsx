@@ -5,9 +5,7 @@ import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
 import csv from 'csv-parser';
-
-// Import pdf-parse - note: this might need to be a dynamic import in the browser
-const pdfParse = require('pdf-parse');
+import pdfParse from 'pdf-parse';
 
 interface ProcessedContent {
   type: string;
