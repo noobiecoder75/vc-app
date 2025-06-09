@@ -50,8 +50,8 @@ export interface StartupAnalysis {
   }>;
 }
 
-const ANALYSIS_PROMPT = `You are an AI startup analyst. Analyze the provided startup document and extract relevant information. 
-
+const ANALYSIS_PROMPT = `You are an AI startup analyst. Analyze the provided document and extract relevant information. 
+IMPORTANT: Even if this isn't a perfect pitch deck, look for ANY business information like company names, products, services, revenue, team members, problems being solved, etc.
 CRITICAL: You must respond with ONLY a valid JSON object, no additional text, explanations, or commentary before or after the JSON.
 
 Return a JSON object with the following structure, only including fields where you can confidently extract data:
