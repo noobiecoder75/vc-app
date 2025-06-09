@@ -112,6 +112,8 @@ IMPORTANT GUIDELINES:
 - Be conservative - if unsure, omit the field
 - For arrays, only include if you find multiple relevant items
 - Ensure all numbers are valid numeric values
+- Analyze the entire document thoroughly, including any conversation transcripts, interviews, or detailed content
+- Extract insights from context clues and implied information where appropriate
 
 Document Content:`;
 
@@ -152,7 +154,7 @@ ${content}
     `.trim();
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4-turbo',
       messages: [
         {
           role: 'system',
@@ -164,7 +166,7 @@ ${content}
         }
       ],
       temperature: 0.1,
-      max_tokens: 2000
+      max_tokens: 4000
     });
 
     const analysisText = response.choices[0]?.message?.content;
