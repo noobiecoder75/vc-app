@@ -1,14 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, File, CheckCircle, AlertCircle, FileText, Image, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import * as XLSX from 'xlsx';
-import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
-import csv from 'csv-parser';
 import * as pdfjsLib from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.js?url";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Use CDN worker for better Vite compatibility
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface ProcessedContent {
   type: string;
@@ -128,104 +125,6 @@ Key insights: ${rowCount > 0 ? 'Data contains structured information suitable fo
     });
   };
 
-  const processXLSX = async (file: File): Promise<ProcessedContent> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          console.log(`📊 Processing XLSX file: ${file.name} (${file.size} bytes)`);
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetNames = workbook.SheetNames;
-          
-          let content = `Excel Workbook Analysis:
-- Sheets: ${sheetNames.length}
-- Sheet names: ${sheetNames.join(', ')}\n\n`;
-          
-          const allSheetData: Record<string, any> = {};
-          
-          sheetNames.forEach((sheetName, index) => {
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            const headers = jsonData[0] as string[] || [];
-            const dataRows = jsonData.slice(1);
-            
-            allSheetData[sheetName] = {
-              headers,
-              rowCount: dataRows.length,
-              sampleData: dataRows.slice(0, 3)
-            };
-            
-            content += `Sheet "${sheetName}":
-- Rows: ${dataRows.length}
-- Columns: ${headers.length}
-- Headers: ${headers.join(', ')}
-${index < sheetNames.length - 1 ? '\n' : ''}`;
-          });
-          
-          console.log(`✅ XLSX processed successfully: ${sheetNames.length} sheets`);
-          resolve({
-            type: 'xlsx',
-            content,
-            metadata: { sheetNames, sheetData: allSheetData, totalSheets: sheetNames.length }
-          });
-        } catch (error) {
-          logError('XLSX Processing', error, { fileName: file.name, fileSize: file.size });
-          reject(error);
-        }
-      };
-      reader.onerror = (error) => {
-        logError('XLSX FileReader', error, { fileName: file.name, fileSize: file.size });
-        reject(new Error('Failed to read XLSX file'));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const processDOCX = async (file: File): Promise<ProcessedContent> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          console.log(`📝 Processing DOCX file: ${file.name} (${file.size} bytes)`);
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          const result = await mammoth.extractRawText({ arrayBuffer });
-          
-          const wordCount = result.value.split(/\s+/).filter(word => word.length > 0).length;
-          const paragraphs = result.value.split('\n').filter(p => p.trim().length > 0);
-          
-          const content = `Document Analysis:
-- Word count: ${wordCount}
-- Paragraphs: ${paragraphs.length}
-- Character count: ${result.value.length}
-
-Content preview:
-${result.value.substring(0, 500)}${result.value.length > 500 ? '...' : ''}`;
-          
-          console.log(`✅ DOCX processed successfully: ${wordCount} words, ${paragraphs.length} paragraphs`);
-          resolve({
-            type: 'docx',
-            content,
-            metadata: { 
-              wordCount, 
-              charCount: result.value.length, 
-              paragraphCount: paragraphs.length,
-              fullText: result.value
-            }
-          });
-        } catch (error) {
-          logError('DOCX Processing', error, { fileName: file.name, fileSize: file.size });
-          reject(error);
-        }
-      };
-      reader.onerror = (error) => {
-        logError('DOCX FileReader', error, { fileName: file.name, fileSize: file.size });
-        reject(new Error('Failed to read DOCX file'));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
   const processPDF = async (file: File): Promise<ProcessedContent> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -290,72 +189,6 @@ ${fullText.substring(0, 500)}${fullText.length > 500 ? '...' : ''}`;
       reader.onerror = (error) => {
         logError('PDF FileReader', error, { fileName: file.name, fileSize: file.size });
         reject(new Error('Failed to read PDF file'));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const processPPTX = async (file: File): Promise<ProcessedContent> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          console.log(`📊 Processing PPTX file: ${file.name} (${file.size} bytes)`);
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          
-          // For PPTX, we'll need to use a different approach since pptx-parser might not work in browser
-          // Let's try to extract some basic information and provide a meaningful response
-          
-          try {
-            // Attempt to parse as a ZIP file (PPTX is a ZIP archive)
-            const decoder = new TextDecoder();
-            const content = decoder.decode(arrayBuffer.slice(0, 1000)); // Sample first 1KB
-            
-            const slideEstimate = Math.max(1, Math.floor(file.size / 50000)); // Rough estimate based on size
-            
-            const analysisContent = `PowerPoint Presentation Analysis:
-- Estimated slides: ~${slideEstimate}
-- File size: ${(file.size / 1024).toFixed(2)} KB
-- Format: Microsoft PowerPoint (.pptx)
-- Status: Successfully uploaded
-
-Note: Full text extraction from PowerPoint files requires server-side processing. 
-The presentation has been uploaded and can be analyzed by our AI systems.`;
-            
-            console.log(`✅ PPTX processed successfully: ~${slideEstimate} estimated slides`);
-            resolve({
-              type: 'pptx',
-              content: analysisContent,
-              metadata: { 
-                estimatedSlides: slideEstimate, 
-                size: file.size,
-                format: 'pptx',
-                processingNote: 'Basic analysis - full extraction requires server processing'
-              }
-            });
-          } catch (parseError) {
-            // If parsing fails, still provide useful info
-            const fallbackContent = `PowerPoint Presentation Uploaded:
-- File size: ${(file.size / 1024).toFixed(2)} KB
-- Format: Microsoft PowerPoint (.pptx)
-- Status: Successfully uploaded for processing
-
-The presentation will be analyzed by our AI systems to extract key insights about your startup idea.`;
-            
-            resolve({
-              type: 'pptx',
-              content: fallbackContent,
-              metadata: { size: file.size, format: 'pptx' }
-            });
-          }
-        } catch (error) {
-          logError('PPTX Processing', error, { fileName: file.name, fileSize: file.size });
-          reject(error);
-        }
-      };
-      reader.onerror = (error) => {
-        logError('PPTX FileReader', error, { fileName: file.name, fileSize: file.size });
-        reject(new Error('Failed to read PPTX file'));
       };
       reader.readAsArrayBuffer(file);
     });
@@ -454,14 +287,8 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
 
     if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
       return processCSV(file);
-    } else if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileName.endsWith('.xlsx')) {
-      return processXLSX(file);
-    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
-      return processDOCX(file);
     } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
       return processPDF(file);
-    } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || fileName.endsWith('.pptx')) {
-      return processPPTX(file);
     } else if (fileType.startsWith('image/') || fileName.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/)) {
       return processImage(file);
     } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
@@ -472,7 +299,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
         fileName, 
         fileType, 
         fileSize: file.size,
-        supportedTypes: ['PDF', 'DOCX', 'XLSX', 'PPTX', 'CSV', 'TXT', 'Images']
+        supportedTypes: ['PDF', 'CSV', 'TXT', 'Images']
       });
       throw unsupportedError;
     }
@@ -491,13 +318,10 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
     // Validate file type
     const allowedTypes = [
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'text/plain',
       'text/csv'
     ];
-    const allowedExtensions = ['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    const allowedExtensions = ['.pdf', '.txt', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
     
     const isValidType = allowedTypes.includes(file.type) || 
                        file.type.startsWith('image/') ||
@@ -512,7 +336,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
         allowedExtensions
       });
       setUploadStatus('error');
-      setErrorMessage('Unsupported file type. Please upload a PDF, DOCX, XLSX, PPTX, CSV, TXT, or Image file.');
+      setErrorMessage('Unsupported file type. Please upload a PDF, CSV, TXT, or Image file.');
       return;
     }
 
@@ -550,14 +374,13 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
           fileSize: file.size,
           storageFileName: fileName,
           bucket: 'uploads',
-          supabaseUrl: supabase.supabaseUrl,
           uploadData
         };
         
         // Check if it's a bucket not found error
         if (uploadError.message.includes('Bucket not found') || 
             uploadError.message.includes('bucket') || 
-            uploadError.statusCode === '404') {
+            uploadError.message.includes('404')) {
           logError('Supabase Storage - Bucket Not Found', uploadError, context);
           setUploadStatus('bucket-error');
           return;
@@ -629,13 +452,10 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'csv':
-      case 'xlsx':
         return <BarChart3 className="w-8 h-8 text-green-600" />;
       case 'image':
         return <Image className="w-8 h-8 text-blue-600" />;
       case 'pdf':
-      case 'docx':
-      case 'pptx':
       case 'txt':
       default:
         return <FileText className="w-8 h-8 text-purple-600" />;
@@ -657,7 +477,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
       >
         <input
           type="file"
-          accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+          accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
           onChange={handleInputChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={uploading}
@@ -685,9 +505,6 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
           
           <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
             <span className="bg-gray-100 px-3 py-1 rounded-full">PDF</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">DOCX</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">XLSX</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">PPTX</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">CSV</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">TXT</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">Images</span>
@@ -757,7 +574,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
           <div>
             <p className="text-red-800 font-medium">Upload failed</p>
             <p className="text-red-700 text-sm">
-              {errorMessage || 'Please ensure your file is a supported format (PDF, DOCX, XLSX, PPTX, CSV, TXT, or Image) and try again.'}
+              {errorMessage || 'Please ensure your file is a supported format (PDF, CSV, TXT, or Image) and try again.'}
             </p>
             <p className="text-red-600 text-xs mt-2">
               Check the browser console for detailed error information.
