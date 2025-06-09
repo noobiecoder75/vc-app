@@ -2,10 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { Upload, File, CheckCircle, AlertCircle, FileText, Image, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { createWorker } from 'tesseract.js';
-import * as pdfjsLib from "pdfjs-dist";
-
-// Use CDN worker for better Vite compatibility
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface ProcessedContent {
   type: string;
@@ -125,74 +121,7 @@ Key insights: ${rowCount > 0 ? 'Data contains structured information suitable fo
     });
   };
 
-  const processPDF = async (file: File): Promise<ProcessedContent> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          console.log(`📄 Processing PDF file: ${file.name} (${file.size} bytes)`);
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          
-          // Use pdfjs-dist to extract text
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-          const pdf = await loadingTask.promise;
-          
-          const numPages = pdf.numPages;
-          let fullText = '';
-          
-          // Extract text from all pages
-          for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items
-              .map((item: any) => item.str)
-              .join(' ');
-            fullText += pageText + '\n';
-          }
-          
-          const wordCount = fullText.split(/\s+/).filter(word => word.length > 0).length;
-          
-          const content = `PDF Document Analysis:
-- Pages: ${numPages}
-- Word count: ${wordCount}
-- Character count: ${fullText.length}
 
-Content preview:
-${fullText.substring(0, 500)}${fullText.length > 500 ? '...' : ''}`;
-          
-          console.log(`✅ PDF processed successfully: ${numPages} pages, ${wordCount} words`);
-          resolve({
-            type: 'pdf',
-            content,
-            metadata: { 
-              pages: numPages, 
-              wordCount, 
-              charCount: fullText.length,
-              fullText: fullText.trim()
-            }
-          });
-        } catch (error) {
-          logError('PDF Processing', error, { fileName: file.name, fileSize: file.size });
-          // Fallback to basic info if PDF processing fails
-          const fallbackContent = `PDF file processed (text extraction failed):
-- File size: ${(file.size / 1024).toFixed(2)} KB
-- Status: Could not extract text content
-- Reason: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          
-          resolve({
-            type: 'pdf',
-            content: fallbackContent,
-            metadata: { size: file.size, error: error instanceof Error ? error.message : 'Unknown error' }
-          });
-        }
-      };
-      reader.onerror = (error) => {
-        logError('PDF FileReader', error, { fileName: file.name, fileSize: file.size });
-        reject(new Error('Failed to read PDF file'));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
 
   const processImage = async (file: File): Promise<ProcessedContent> => {
     try {
@@ -287,8 +216,6 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
 
     if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
       return processCSV(file);
-    } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      return processPDF(file);
     } else if (fileType.startsWith('image/') || fileName.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/)) {
       return processImage(file);
     } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
@@ -299,7 +226,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
         fileName, 
         fileType, 
         fileSize: file.size,
-        supportedTypes: ['PDF', 'CSV', 'TXT', 'Images']
+        supportedTypes: ['CSV', 'TXT', 'Images']
       });
       throw unsupportedError;
     }
@@ -317,11 +244,10 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
     
     // Validate file type
     const allowedTypes = [
-      'application/pdf',
       'text/plain',
       'text/csv'
     ];
-    const allowedExtensions = ['.pdf', '.txt', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    const allowedExtensions = ['.txt', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
     
     const isValidType = allowedTypes.includes(file.type) || 
                        file.type.startsWith('image/') ||
@@ -336,7 +262,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
         allowedExtensions
       });
       setUploadStatus('error');
-      setErrorMessage('Unsupported file type. Please upload a PDF, CSV, TXT, or Image file.');
+      setErrorMessage('Unsupported file type. Please upload a CSV, TXT, or Image file.');
       return;
     }
 
@@ -455,7 +381,6 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
         return <BarChart3 className="w-8 h-8 text-green-600" />;
       case 'image':
         return <Image className="w-8 h-8 text-blue-600" />;
-      case 'pdf':
       case 'txt':
       default:
         return <FileText className="w-8 h-8 text-purple-600" />;
@@ -477,7 +402,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
       >
         <input
           type="file"
-          accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+          accept=".txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
           onChange={handleInputChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={uploading}
@@ -504,7 +429,6 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
           </p>
           
           <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
-            <span className="bg-gray-100 px-3 py-1 rounded-full">PDF</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">CSV</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">TXT</span>
             <span className="bg-gray-100 px-3 py-1 rounded-full">Images</span>
@@ -574,7 +498,7 @@ ${rawContent.substring(0, 500)}${rawContent.length > 500 ? '...' : ''}`;
           <div>
             <p className="text-red-800 font-medium">Upload failed</p>
             <p className="text-red-700 text-sm">
-              {errorMessage || 'Please ensure your file is a supported format (PDF, CSV, TXT, or Image) and try again.'}
+              {errorMessage || 'Please ensure your file is a supported format (CSV, TXT, or Image) and try again.'}
             </p>
             <p className="text-red-600 text-xs mt-2">
               Check the browser console for detailed error information.
