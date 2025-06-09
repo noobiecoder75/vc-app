@@ -109,7 +109,6 @@ IMPORTANT GUIDELINES:
 - RESPOND WITH ONLY JSON - NO ADDITIONAL TEXT OR EXPLANATIONS
 - Only include fields where you can extract meaningful data
 - For financial figures, convert to USD if needed
-- Be conservative - if unsure, omit the field
 - For arrays, only include if you find multiple relevant items
 - Ensure all numbers are valid numeric values
 - Analyze the entire document thoroughly, including any conversation transcripts, interviews, or detailed content
