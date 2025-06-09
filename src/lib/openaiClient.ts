@@ -112,7 +112,6 @@ IMPORTANT GUIDELINES:
 - Be conservative - if unsure, omit the field
 - For arrays, only include if you find multiple relevant items
 - Ensure all numbers are valid numeric values
-- If no meaningful startup data can be extracted, return an empty JSON object: {}
 
 Document Content:`;
 
