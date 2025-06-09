@@ -50,7 +50,11 @@ export interface StartupAnalysis {
   }>;
 }
 
-const ANALYSIS_PROMPT = `You are an AI startup analyst. Analyze the provided startup document and extract relevant information. Return a JSON object with the following structure, only including fields where you can confidently extract data:
+const ANALYSIS_PROMPT = `You are an AI startup analyst. Analyze the provided startup document and extract relevant information. 
+
+CRITICAL: You must respond with ONLY a valid JSON object, no additional text, explanations, or commentary before or after the JSON.
+
+Return a JSON object with the following structure, only including fields where you can confidently extract data:
 
 {
   "company": {
@@ -102,13 +106,35 @@ const ANALYSIS_PROMPT = `You are an AI startup analyst. Analyze the provided sta
 }
 
 IMPORTANT GUIDELINES:
+- RESPOND WITH ONLY JSON - NO ADDITIONAL TEXT OR EXPLANATIONS
 - Only include fields where you can extract meaningful data
 - For financial figures, convert to USD if needed
 - Be conservative - if unsure, omit the field
 - For arrays, only include if you find multiple relevant items
 - Ensure all numbers are valid numeric values
+- If no meaningful startup data can be extracted, return an empty JSON object: {}
 
 Document Content:`;
+
+// Helper function to extract JSON from AI response
+function extractJsonFromResponse(responseText: string): string {
+  // First, try to find JSON block markers
+  const jsonBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (jsonBlockMatch) {
+    return jsonBlockMatch[1].trim();
+  }
+
+  // If no code block, look for the main JSON object
+  const firstBrace = responseText.indexOf('{');
+  const lastBrace = responseText.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return responseText.substring(firstBrace, lastBrace + 1);
+  }
+  
+  // If no braces found, return the original text (will likely fail JSON.parse)
+  return responseText;
+}
 
 export async function analyzeStartupContent(
   content: string,
@@ -149,14 +175,19 @@ ${content}
 
     console.log('🤖 Raw ChatGPT response:', analysisText);
 
+    // Extract JSON from the response
+    const jsonString = extractJsonFromResponse(analysisText);
+    console.log('🔍 Extracted JSON string:', jsonString);
+
     // Try to parse JSON response
     try {
-      const analysis = JSON.parse(analysisText) as StartupAnalysis;
+      const analysis = JSON.parse(jsonString) as StartupAnalysis;
       console.log('✅ ChatGPT analysis completed:', analysis);
       return analysis;
     } catch (parseError) {
       console.error('❌ Failed to parse ChatGPT JSON response:', parseError);
-      console.log('Raw response that failed to parse:', analysisText);
+      console.log('JSON string that failed to parse:', jsonString);
+      console.log('Original raw response:', analysisText);
       
       // Return empty analysis if parsing fails
       return {};
