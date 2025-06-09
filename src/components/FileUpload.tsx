@@ -21,6 +21,7 @@ const FileUpload = () => {
   const [uploadedFile, setUploadedFile] = useState<string>('');
   const [processedContent, setProcessedContent] = useState<ProcessedContent | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<StartupAnalysis | null>(null);
+  const [aiError, setAiError] = useState<string>('');
   const [dbResult, setDbResult] = useState<DatabaseInsertResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -237,6 +238,41 @@ ${rawContent}`;
     }
   };
 
+  // Create basic analysis from processed content if AI fails
+  const createBasicAnalysis = (processed: ProcessedContent): StartupAnalysis => {
+    const analysis: StartupAnalysis = {};
+
+    // Try to extract basic company info from content
+    const content = processed.content.toLowerCase();
+    
+    // Create a basic company entry
+    analysis.company = {
+      name: processed.metadata?.fileName || 'Startup from Upload',
+      pitch_deck_summary: `Processed ${processed.type} file with ${processed.metadata?.wordCount || 0} words`
+    };
+
+    // If it's CSV data, try to create metrics
+    if (processed.type === 'csv' && processed.metadata?.fullData) {
+      analysis.metrics = [];
+      const rows = processed.metadata.fullData.slice(0, 10); // First 10 rows
+      
+      rows.forEach((row: any, index: number) => {
+        Object.entries(row).forEach(([key, value]: [string, any]) => {
+          const numValue = parseFloat(value);
+          if (!isNaN(numValue) && key.toLowerCase().includes('revenue' || 'users' || 'growth' || 'conversion')) {
+            analysis.metrics?.push({
+              metric_name: key,
+              metric_value: numValue,
+              metric_unit: key.toLowerCase().includes('revenue') ? 'USD' : key.toLowerCase().includes('rate') ? '%' : 'count'
+            });
+          }
+        });
+      });
+    }
+
+    return analysis;
+  };
+
   const handleFiles = async (files: FileList) => {
     const file = files[0];
     
@@ -277,6 +313,7 @@ ${rawContent}`;
     setSavingToDb(false);
     setUploadStatus('idle');
     setErrorMessage('');
+    setAiError('');
     setProcessedContent(null);
     setAiAnalysis(null);
     setDbResult(null);
@@ -295,9 +332,11 @@ ${rawContent}`;
         metadata: processed.metadata
       });
 
-      // Step 2: Analyze with ChatGPT
+      // Step 2: Try AI analysis, but continue even if it fails
       setAiAnalyzing(true);
       console.log(`🤖 Starting AI analysis...`);
+      
+      let finalAnalysis: StartupAnalysis;
       
       try {
         const analysis = await analyzeStartupContent(
@@ -306,19 +345,27 @@ ${rawContent}`;
           processed.metadata
         );
         setAiAnalysis(analysis);
+        finalAnalysis = analysis;
         console.log(`✅ AI analysis completed:`, analysis);
       } catch (aiError) {
         logError('AI Analysis', aiError, { processedContent: processed });
-        console.warn('⚠️ AI analysis failed, continuing without it:', aiError);
-        setAiAnalysis({});
+        console.warn('⚠️ AI analysis failed, creating basic analysis instead:', aiError);
+        
+        // Set error message for user
+        const errorMsg = aiError instanceof Error ? aiError.message : 'Unknown AI error';
+        setAiError(`AI analysis unavailable: ${errorMsg}. Using basic analysis instead.`);
+        
+        // Create basic analysis from processed content
+        finalAnalysis = createBasicAnalysis(processed);
+        setAiAnalysis(finalAnalysis);
       }
       setAiAnalyzing(false);
 
-      // Step 3: Save to database
+      // Step 3: Save to database (now with either AI or basic analysis)
       setSavingToDb(true);
-      console.log(`💾 Starting database save...`);
+      console.log(`💾 Starting database save with analysis:`, finalAnalysis);
       
-      const dbInsertResult = await insertStartupData(aiAnalysis || {});
+      const dbInsertResult = await insertStartupData(finalAnalysis);
       setDbResult(dbInsertResult);
       setSavingToDb(false);
 
@@ -371,8 +418,9 @@ ${rawContent}`;
         status: 'done',
         parsed_json: {
           ...processed.metadata,
-          aiAnalysis: aiAnalysis || {},
-          dbResult: dbResult || {}
+          aiAnalysis: finalAnalysis || {},
+          dbResult: dbResult || {},
+          aiError: aiError || null
         },
         raw_text: processed.content
       };
@@ -475,10 +523,11 @@ ${rawContent}`;
                   {processedContent && <CheckCircle className="w-4 h-4" />}
                 </div>
                 
-                <div className={`flex items-center justify-center space-x-2 text-sm ${aiAnalyzing ? 'text-blue-600' : aiAnalysis ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`flex items-center justify-center space-x-2 text-sm ${aiAnalyzing ? 'text-blue-600' : aiAnalysis ? 'text-green-600' : aiError ? 'text-amber-600' : 'text-gray-400'}`}>
                   <Brain className="w-4 h-4" />
-                  <span>AI Analysis</span>
+                  <span>{aiError ? 'Basic Analysis' : 'AI Analysis'}</span>
                   {aiAnalysis && <CheckCircle className="w-4 h-4" />}
+                  {aiError && <AlertCircle className="w-4 h-4" />}
                 </div>
                 
                 <div className={`flex items-center justify-center space-x-2 text-sm ${savingToDb ? 'text-blue-600' : dbResult ? 'text-green-600' : 'text-gray-400'}`}>
@@ -508,6 +557,22 @@ ${rawContent}`;
         </div>
       </div>
 
+      {/* AI Error Warning */}
+      {aiError && (
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
+            <div>
+              <p className="text-amber-800 font-medium">AI Analysis Unavailable</p>
+              <p className="text-amber-700 text-sm mb-2">{aiError}</p>
+              <p className="text-amber-600 text-xs">
+                To enable AI analysis, make sure you have set your OpenAI API key in the environment variables.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Status Messages */}
       {uploadStatus === 'success' && (
         <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -516,7 +581,7 @@ ${rawContent}`;
             <div className="flex-1">
               <p className="text-green-800 font-medium">Upload and analysis successful!</p>
               <p className="text-green-700 text-sm mb-3">
-                File "{uploadedFile}" has been processed and analyzed with AI.
+                File "{uploadedFile}" has been processed and analyzed.
               </p>
               
               {/* File Processing Results */}
@@ -540,7 +605,9 @@ ${rawContent}`;
                 <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
                   <div className="flex items-center mb-2">
                     <Brain className="w-6 h-6 text-blue-600" />
-                    <span className="ml-2 font-medium text-gray-900">AI Analysis Results</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {aiError ? 'Basic Analysis Results' : 'AI Analysis Results'}
+                    </span>
                   </div>
                   <div className="space-y-2 text-sm">
                     {aiAnalysis.company && (
