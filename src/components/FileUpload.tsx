@@ -238,6 +238,26 @@ ${rawContent}`;
     }
   };
 
+  // Helper function to check if analysis object is empty or has no meaningful data
+  const isAnalysisEmpty = (analysis: StartupAnalysis): boolean => {
+    if (!analysis || typeof analysis !== 'object') return true;
+    
+    // Check if object is completely empty
+    if (Object.keys(analysis).length === 0) return true;
+    
+    // Check if all properties are empty/null/undefined
+    const hasCompany = analysis.company && typeof analysis.company === 'object' && 
+                      (analysis.company.name || analysis.company.pitch_deck_summary);
+    const hasFounders = analysis.founders && Array.isArray(analysis.founders) && analysis.founders.length > 0;
+    const hasMetrics = analysis.metrics && Array.isArray(analysis.metrics) && analysis.metrics.length > 0;
+    const hasPitchDeck = analysis.pitch_deck && typeof analysis.pitch_deck === 'object';
+    const hasFinancialModel = analysis.financial_model && typeof analysis.financial_model === 'object';
+    const hasVcFitReport = analysis.vc_fit_report && typeof analysis.vc_fit_report === 'object';
+    const hasGoToMarket = analysis.go_to_market && typeof analysis.go_to_market === 'object';
+    
+    return !(hasCompany || hasFounders || hasMetrics || hasPitchDeck || hasFinancialModel || hasVcFitReport || hasGoToMarket);
+  };
+
   // Create basic analysis from processed content if AI fails
   const createBasicAnalysis = (processed: ProcessedContent): StartupAnalysis => {
     const analysis: StartupAnalysis = {};
@@ -344,6 +364,12 @@ ${rawContent}`;
           processed.type, 
           processed.metadata
         );
+        
+        // Check if the analysis is empty and throw error to trigger fallback
+        if (isAnalysisEmpty(analysis)) {
+          throw new Error('AI returned empty analysis - no meaningful data extracted');
+        }
+        
         setAiAnalysis(analysis);
         finalAnalysis = analysis;
         console.log(`✅ AI analysis completed:`, analysis);
