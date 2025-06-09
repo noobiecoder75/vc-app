@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, File, CheckCircle, AlertCircle, FileText, Image, BarChart3, Brain, Database } from 'lucide-react';
+import { Upload, File, CheckCircle, AlertCircle, FileText, Image, BarChart3, Brain, Database, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { createWorker } from 'tesseract.js';
 import { analyzeStartupContent, StartupAnalysis } from '../lib/openaiClient';
 import { insertStartupData, DatabaseInsertResult } from '../lib/databaseService';
+import LiveKPIChart from './LiveKPIChart';
 
 interface ProcessedContent {
   type: string;
@@ -24,6 +25,7 @@ const FileUpload = () => {
   const [aiError, setAiError] = useState<string>('');
   const [dbResult, setDbResult] = useState<DatabaseInsertResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showKPIChart, setShowKPIChart] = useState(false);
 
   const logError = (operation: string, error: any, context?: any) => {
     const errorDetails = {
@@ -337,6 +339,7 @@ ${rawContent}`;
     setProcessedContent(null);
     setAiAnalysis(null);
     setDbResult(null);
+    setShowKPIChart(false);
 
     try {
       console.log(`🔄 Starting file processing pipeline for: ${file.name}`);
@@ -514,6 +517,27 @@ ${rawContent}`;
     return 'Upload your startup documents';
   };
 
+  // Show KPI Chart if requested
+  if (showKPIChart && dbResult?.companyId) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => setShowKPIChart(false)}
+            className="px-4 py-2 text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+          >
+            ← Back to Upload
+          </button>
+          <h2 className="text-2xl font-bold text-gray-900">Live KPI Dashboard</h2>
+        </div>
+        <LiveKPIChart 
+          companyId={dbResult.companyId} 
+          companyName={aiAnalysis?.company?.name}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <div
@@ -660,7 +684,7 @@ ${rawContent}`;
 
               {/* Database Results */}
               {dbResult && (
-                <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
                   <div className="flex items-center mb-2">
                     <Database className="w-6 h-6 text-purple-600" />
                     <span className="ml-2 font-medium text-gray-900">Database Results</span>
@@ -691,6 +715,19 @@ ${rawContent}`;
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* KPI Chart Button */}
+              {dbResult?.companyId && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowKPIChart(true)}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg font-semibold flex items-center justify-center"
+                  >
+                    <TrendingUp className="w-5 h-5 mr-2" />
+                    View Live KPI Dashboard
+                  </button>
                 </div>
               )}
             </div>
