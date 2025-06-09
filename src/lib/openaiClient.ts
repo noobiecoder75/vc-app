@@ -107,7 +107,6 @@ IMPORTANT GUIDELINES:
 - Be conservative - if unsure, omit the field
 - For arrays, only include if you find multiple relevant items
 - Ensure all numbers are valid numeric values
-- If the document doesn't contain startup-related information, return an empty object {}
 
 Document Content:`;
 
