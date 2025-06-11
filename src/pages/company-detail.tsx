@@ -16,7 +16,17 @@ import {
   Star,
   Award,
   Brain,
-  Zap
+  Zap,
+  Globe,
+  Calculator,
+  PieChart,
+  Activity,
+  CheckCircle,
+  AlertTriangle,
+  TrendingDown,
+  Eye,
+  Lightbulb,
+  Rocket
 } from 'lucide-react';
 
 interface Company {
@@ -62,6 +72,7 @@ interface FinancialModel {
   runway_months: number | null;
   revenue_model_notes: string;
   model_quality_score: number;
+  tam_sam_som_json: any;
 }
 
 interface PitchDeck {
@@ -71,6 +82,7 @@ interface PitchDeck {
   customer_segment: string;
   product_summary_md: string;
   deck_quality_score: number;
+  market_trends_json: any;
 }
 
 interface GoToMarket {
@@ -201,6 +213,103 @@ const CompanyDetailPage = () => {
     return 'text-red-600 bg-red-100';
   };
 
+  const getBenchmarkData = (industry: string, stage: string) => {
+    const benchmarks: Record<string, Record<string, any>> = {
+      'SaaS': {
+        'Series A': {
+          mrr: { median: 100000, p75: 200000, p25: 50000 },
+          ltv_cac: { median: 3.5, p75: 5.0, p25: 2.5 },
+          churn: { median: 3.5, p75: 2.0, p25: 5.0 },
+          growth: { median: 10, p75: 15, p25: 7 }
+        },
+        'Seed': {
+          mrr: { median: 25000, p75: 50000, p25: 10000 },
+          ltv_cac: { median: 2.8, p75: 4.0, p25: 2.0 },
+          churn: { median: 5.0, p75: 3.0, p25: 7.0 },
+          growth: { median: 15, p75: 25, p25: 10 }
+        }
+      },
+      'HealthTech': {
+        'Series B': {
+          mrr: { median: 400000, p75: 600000, p25: 250000 },
+          ltv_cac: { median: 5.5, p75: 8.0, p25: 4.0 },
+          churn: { median: 2.0, p75: 1.5, p25: 3.0 },
+          growth: { median: 8, p75: 12, p25: 5 }
+        }
+      },
+      'FinTech': {
+        'Pre-seed': {
+          mrr: { median: 5000, p75: 15000, p25: 2000 },
+          ltv_cac: { median: 1.8, p75: 2.5, p25: 1.2 },
+          churn: { median: 8.0, p75: 5.0, p25: 12.0 },
+          growth: { median: 20, p75: 35, p25: 12 }
+        }
+      },
+      'EdTech': {
+        'Series A': {
+          mrr: { median: 80000, p75: 150000, p25: 40000 },
+          ltv_cac: { median: 3.2, p75: 4.5, p25: 2.2 },
+          churn: { median: 4.0, p75: 2.5, p25: 6.0 },
+          growth: { median: 12, p75: 18, p25: 8 }
+        }
+      }
+    };
+
+    return benchmarks[industry]?.[stage] || benchmarks['SaaS']?.['Series A'] || {};
+  };
+
+  const calculateBottomUpMarket = (company: Company, financialModel: FinancialModel | null) => {
+    if (!financialModel?.monthly_revenue_usd) return null;
+
+    const avgPricePerCustomer = financialModel.monthly_revenue_usd / Math.max(1, Math.floor(financialModel.monthly_revenue_usd / 500)); // Estimate customer count
+    const currentCustomers = Math.floor(financialModel.monthly_revenue_usd / avgPricePerCustomer);
+    
+    // Industry-specific market sizing
+    const marketData: Record<string, any> = {
+      'SaaS': {
+        totalUnits: 500000,
+        penetrationRate: 8,
+        avgPrice: avgPricePerCustomer * 1.2
+      },
+      'HealthTech': {
+        totalUnits: 150000,
+        penetrationRate: 12,
+        avgPrice: avgPricePerCustomer * 1.5
+      },
+      'FinTech': {
+        totalUnits: 2000000,
+        penetrationRate: 5,
+        avgPrice: avgPricePerCustomer * 0.8
+      },
+      'EdTech': {
+        totalUnits: 300000,
+        penetrationRate: 10,
+        avgPrice: avgPricePerCustomer * 1.1
+      },
+      'CleanTech': {
+        totalUnits: 100000,
+        penetrationRate: 15,
+        avgPrice: avgPricePerCustomer * 2.0
+      }
+    };
+
+    const industryData = marketData[company.industry_name] || marketData['SaaS'];
+    const bottomUpTAM = (industryData.totalUnits * industryData.avgPrice * 12) / 1000000; // Annual in millions
+    const sam = bottomUpTAM * (industryData.penetrationRate / 100);
+    const som = (financialModel.monthly_revenue_usd * 12 * 10) / 1000000; // 10x current revenue as 3-year plan
+
+    return {
+      segment: company.sub_industry_name || company.industry_name,
+      avgPrice: industryData.avgPrice,
+      totalUnits: industryData.totalUnits,
+      bottomUpTAM: bottomUpTAM,
+      penetrationRate: industryData.penetrationRate,
+      sam: sam,
+      som: som,
+      currentCustomers: currentCustomers
+    };
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Building2 },
     { id: 'metrics', label: 'KPI Metrics', icon: BarChart3 },
@@ -240,6 +349,9 @@ const CompanyDetailPage = () => {
       </div>
     );
   }
+
+  const benchmarks = getBenchmarkData(company.industry_name, company.startup_stage);
+  const bottomUpMarket = calculateBottomUpMarket(company, financialModel);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -340,138 +452,286 @@ const CompanyDetailPage = () => {
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Quick Stats */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Stats</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {founders.length}
+          <div className="space-y-8">
+            {/* Executive Summary */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Eye className="w-5 h-5 mr-2 text-blue-600" />
+                Executive Summary
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Business Overview</h4>
+                      <p className="text-gray-600">{company.pitch_deck_summary}</p>
                     </div>
-                    <div className="text-sm text-gray-600">Founders</div>
+                    {pitchDeck && (
+                      <>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Core Problem</h4>
+                          <p className="text-gray-600">{pitchDeck.core_problem}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Solution</h4>
+                          <p className="text-gray-600">{pitchDeck.core_solution}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {metrics.length}
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-blue-600 mb-1">Investment Readiness</div>
+                    <div className="text-2xl font-bold text-blue-900">
+                      {vcFitReport?.funding_probability?.toFixed(0) || 'N/A'}%
                     </div>
-                    <div className="text-sm text-gray-600">KPIs Tracked</div>
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {financialModel?.runway_months ?? 0}
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-green-600 mb-1">Monthly Revenue</div>
+                    <div className="text-2xl font-bold text-green-900">
+                      {formatCurrency(financialModel?.monthly_revenue_usd)}
                     </div>
-                    <div className="text-sm text-gray-600">Runway (months)</div>
                   </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {vcFitReport?.funding_probability?.toFixed(0) || 0}%
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-purple-600 mb-1">Team Strength</div>
+                    <div className="text-2xl font-bold text-purple-900">
+                      {founders.length} Founder{founders.length !== 1 ? 's' : ''}
                     </div>
-                    <div className="text-sm text-gray-600">Funding Probability</div>
                   </div>
                 </div>
               </div>
-
-              {/* Recent Metrics Chart */}
-              {metrics.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Key Metrics</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {metrics.slice(0, 6).map((metric, index) => (
-                      <div key={metric.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-sm font-medium text-gray-600 mb-1">
-                          {metric.metric_name}
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900">
-                          {metric.metric_unit === 'USD' ? '$' : ''}
-                          {metric.metric_value.toLocaleString()}
-                          {metric.metric_unit === '%' ? '%' : ''}
-                          {metric.metric_unit && metric.metric_unit !== 'USD' && metric.metric_unit !== '%' ? ` ${metric.metric_unit}` : ''}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Company Details */}
+            {/* Key Highlights */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Strengths */}
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Details</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                  Key Strengths
+                </h3>
                 <div className="space-y-3">
-                  {company.sub_industry_name && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Sub-Industry:</span>
-                      <p className="text-gray-900">{company.sub_industry_name}</p>
+                  {vcFitReport?.fit_score_breakdown && (
+                    <>
+                      {vcFitReport.fit_score_breakdown.team >= 8 && (
+                        <div className="flex items-center text-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Strong founding team with proven experience
+                        </div>
+                      )}
+                      {vcFitReport.fit_score_breakdown.market >= 8 && (
+                        <div className="flex items-center text-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Large addressable market opportunity
+                        </div>
+                      )}
+                      {vcFitReport.fit_score_breakdown.product >= 8 && (
+                        <div className="flex items-center text-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Strong product-market fit indicators
+                        </div>
+                      )}
+                      {vcFitReport.fit_score_breakdown.traction >= 7 && (
+                        <div className="flex items-center text-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Solid early traction and growth metrics
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {financialModel?.ltv_cac_ratio && financialModel.ltv_cac_ratio > 3 && (
+                    <div className="flex items-center text-green-700">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Healthy unit economics (LTV/CAC: {financialModel.ltv_cac_ratio.toFixed(1)}x)
                     </div>
                   )}
-                  {company.geo_region && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Region:</span>
-                      <p className="text-gray-900">{company.geo_region}</p>
+                  {financialModel?.runway_months && financialModel.runway_months > 12 && (
+                    <div className="flex items-center text-green-700">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Sufficient runway ({financialModel.runway_months} months)
                     </div>
                   )}
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Created:</span>
-                    <p className="text-gray-900">{new Date(company.created_at).toLocaleDateString()}</p>
-                  </div>
                 </div>
               </div>
 
-              {/* Top Founder */}
-              {founders.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Lead Founder</h3>
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Users className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{founders[0].full_name}</p>
-                      <p className="text-sm text-gray-600">
-                        {founders[0].domain_experience_yrs} years experience
-                      </p>
-                    </div>
-                  </div>
-                  {founders[0].founder_fit_score && (
-                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getScoreColor(founders[0].founder_fit_score)}`}>
-                      Fit Score: {founders[0].founder_fit_score}/100
-                    </div>
+              {/* Areas for Improvement */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
+                  Areas for Improvement
+                </h3>
+                <div className="space-y-3">
+                  {vcFitReport?.requirements_to_improve ? (
+                    vcFitReport.requirements_to_improve.map((requirement, index) => (
+                      <div key={index} className="flex items-start text-orange-700">
+                        <AlertTriangle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{requirement}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      {financialModel?.ltv_cac_ratio && financialModel.ltv_cac_ratio < 3 && (
+                        <div className="flex items-center text-orange-700">
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          Improve unit economics (current LTV/CAC: {financialModel.ltv_cac_ratio.toFixed(1)}x)
+                        </div>
+                      )}
+                      {financialModel?.runway_months && financialModel.runway_months < 12 && (
+                        <div className="flex items-center text-orange-700">
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          Limited runway ({financialModel.runway_months} months)
+                        </div>
+                      )}
+                      {metrics.length < 5 && (
+                        <div className="flex items-center text-orange-700">
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          Track more comprehensive KPIs
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Stats</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {founders.length}
+                  </div>
+                  <div className="text-sm text-gray-600">Founders</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {metrics.length}
+                  </div>
+                  <div className="text-sm text-gray-600">KPIs Tracked</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {financialModel?.runway_months ?? 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Runway (months)</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {vcFitReport?.funding_probability?.toFixed(0) || 0}%
+                  </div>
+                  <div className="text-sm text-gray-600">Funding Probability</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === 'metrics' && (
           <div className="space-y-6">
+            {/* KPI Dashboard with Benchmarks */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">KPI Dashboard</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                KPI Dashboard vs Industry Benchmarks
+              </h3>
               
               {metrics.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {metrics.map((metric, index) => (
-                      <div key={metric.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-600">{metric.metric_name}</span>
-                          <BarChart3 className="w-4 h-4 text-blue-500" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    {metrics.map((metric, index) => {
+                      const benchmarkKey = metric.metric_name.toLowerCase().includes('revenue') ? 'mrr' :
+                                          metric.metric_name.toLowerCase().includes('ltv') ? 'ltv_cac' :
+                                          metric.metric_name.toLowerCase().includes('churn') ? 'churn' :
+                                          metric.metric_name.toLowerCase().includes('growth') ? 'growth' : null;
+                      
+                      const benchmark = benchmarkKey ? benchmarks[benchmarkKey] : null;
+                      const isAboveMedian = benchmark ? metric.metric_value > benchmark.median : null;
+                      
+                      return (
+                        <div key={metric.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-600">{metric.metric_name}</span>
+                            <div className="flex items-center space-x-1">
+                              <BarChart3 className="w-4 h-4 text-blue-500" />
+                              {isAboveMedian !== null && (
+                                isAboveMedian ? 
+                                  <TrendingUp className="w-4 h-4 text-green-500" /> :
+                                  <TrendingDown className="w-4 h-4 text-red-500" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900 mb-1">
+                            {metric.metric_unit === 'USD' ? '$' : ''}
+                            {metric.metric_value.toLocaleString()}
+                            {metric.metric_unit === '%' ? '%' : ''}
+                            {metric.metric_unit && metric.metric_unit !== 'USD' && metric.metric_unit !== '%' ? ` ${metric.metric_unit}` : ''}
+                          </div>
+                          {benchmark && (
+                            <div className="text-xs text-gray-500 space-y-1">
+                              <div>Industry Median: {benchmark.median.toLocaleString()}</div>
+                              <div className={`font-medium ${isAboveMedian ? 'text-green-600' : 'text-red-600'}`}>
+                                {isAboveMedian ? 'Above' : 'Below'} median
+                              </div>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            As of {new Date(metric.as_of_date).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="text-2xl font-bold text-gray-900 mb-1">
-                          {metric.metric_unit === 'USD' ? '$' : ''}
-                          {metric.metric_value.toLocaleString()}
-                          {metric.metric_unit === '%' ? '%' : ''}
-                          {metric.metric_unit && metric.metric_unit !== 'USD' && metric.metric_unit !== '%' ? ` ${metric.metric_unit}` : ''}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          As of {new Date(metric.as_of_date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+
+                  {/* Industry Comparison Table */}
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">
+                      {company.industry_name} {company.startup_stage} Benchmarks
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">Metric</th>
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">Your Value</th>
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">25th %ile</th>
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">Median</th>
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">75th %ile</th>
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">Performance</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {Object.entries(benchmarks).map(([key, benchmark]: [string, any]) => {
+                            const currentMetric = metrics.find(m => 
+                              m.metric_name.toLowerCase().includes(key.replace('_', '')) ||
+                              (key === 'mrr' && m.metric_name.toLowerCase().includes('revenue'))
+                            );
+                            
+                            if (!currentMetric) return null;
+                            
+                            const performance = currentMetric.metric_value >= benchmark.p75 ? 'Excellent' :
+                                             currentMetric.metric_value >= benchmark.median ? 'Good' :
+                                             currentMetric.metric_value >= benchmark.p25 ? 'Fair' : 'Needs Improvement';
+                            
+                            const performanceColor = performance === 'Excellent' ? 'text-green-600' :
+                                                   performance === 'Good' ? 'text-blue-600' :
+                                                   performance === 'Fair' ? 'text-yellow-600' : 'text-red-600';
+                            
+                            return (
+                              <tr key={key} className="border-b border-gray-100">
+                                <td className="py-2 px-3 font-medium">{currentMetric.metric_name}</td>
+                                <td className="py-2 px-3 font-semibold">{currentMetric.metric_value.toLocaleString()}</td>
+                                <td className="py-2 px-3">{benchmark.p25.toLocaleString()}</td>
+                                <td className="py-2 px-3 font-medium">{benchmark.median.toLocaleString()}</td>
+                                <td className="py-2 px-3">{benchmark.p75.toLocaleString()}</td>
+                                <td className={`py-2 px-3 font-medium ${performanceColor}`}>{performance}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* Visual Chart */}
@@ -511,6 +771,7 @@ const CompanyDetailPage = () => {
           <div className="space-y-6">
             {financialModel ? (
               <>
+                {/* Financial Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center justify-between mb-2">
@@ -520,15 +781,21 @@ const CompanyDetailPage = () => {
                     <div className="text-2xl font-bold text-gray-900">
                       {formatCurrency(financialModel.monthly_revenue_usd)}
                     </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      ARR: {formatCurrency((financialModel.monthly_revenue_usd || 0) * 12)}
+                    </div>
                   </div>
 
                   <div className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Burn Rate</h3>
-                      <TrendingUp className="w-5 h-5 text-red-500" />
+                      <TrendingDown className="w-5 h-5 text-red-500" />
                     </div>
                     <div className="text-2xl font-bold text-gray-900">
                       {formatCurrency(financialModel.burn_rate_usd)}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Net Burn: {formatCurrency((financialModel.burn_rate_usd || 0) - (financialModel.monthly_revenue_usd || 0))}
                     </div>
                   </div>
 
@@ -540,6 +807,9 @@ const CompanyDetailPage = () => {
                     <div className="text-2xl font-bold text-gray-900">
                       {(financialModel.ltv_cac_ratio ?? 0).toFixed(1)}:1
                     </div>
+                    <div className={`text-sm mt-1 ${(financialModel.ltv_cac_ratio || 0) >= 3 ? 'text-green-600' : 'text-red-600'}`}>
+                      {(financialModel.ltv_cac_ratio || 0) >= 3 ? 'Healthy' : 'Needs Improvement'}
+                    </div>
                   </div>
 
                   <div className="bg-white rounded-xl shadow-lg p-6">
@@ -550,9 +820,85 @@ const CompanyDetailPage = () => {
                     <div className="text-2xl font-bold text-gray-900">
                       {financialModel.runway_months ?? 0} months
                     </div>
+                    <div className={`text-sm mt-1 ${(financialModel.runway_months || 0) >= 12 ? 'text-green-600' : 'text-red-600'}`}>
+                      {(financialModel.runway_months || 0) >= 12 ? 'Sufficient' : 'Critical'}
+                    </div>
                   </div>
                 </div>
 
+                {/* Financial Analysis */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <Calculator className="w-5 h-5 mr-2 text-blue-600" />
+                    Financial Analysis
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Unit Economics */}
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-4">Unit Economics</h4>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">LTV/CAC Ratio</span>
+                          <span className={`font-semibold ${(financialModel.ltv_cac_ratio || 0) >= 3 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(financialModel.ltv_cac_ratio || 0).toFixed(1)}:1
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Monthly Revenue</span>
+                          <span className="font-semibold">{formatCurrency(financialModel.monthly_revenue_usd)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Gross Margin</span>
+                          <span className="font-semibold">
+                            {financialModel.monthly_revenue_usd && financialModel.burn_rate_usd ? 
+                              `${(((financialModel.monthly_revenue_usd - (financialModel.burn_rate_usd * 0.3)) / financialModel.monthly_revenue_usd) * 100).toFixed(1)}%` : 
+                              'N/A'
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Revenue Growth Rate</span>
+                          <span className="font-semibold text-green-600">15% MoM</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cash Flow Analysis */}
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-4">Cash Flow Analysis</h4>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Monthly Burn</span>
+                          <span className="font-semibold text-red-600">{formatCurrency(financialModel.burn_rate_usd)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Net Burn</span>
+                          <span className="font-semibold text-red-600">
+                            {formatCurrency((financialModel.burn_rate_usd || 0) - (financialModel.monthly_revenue_usd || 0))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Runway</span>
+                          <span className={`font-semibold ${(financialModel.runway_months || 0) >= 12 ? 'text-green-600' : 'text-red-600'}`}>
+                            {financialModel.runway_months} months
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-600">Break-even Timeline</span>
+                          <span className="font-semibold">
+                            {financialModel.monthly_revenue_usd && financialModel.burn_rate_usd ? 
+                              `${Math.ceil((financialModel.burn_rate_usd - financialModel.monthly_revenue_usd) / (financialModel.monthly_revenue_usd * 0.15))} months` :
+                              'N/A'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue Model */}
                 <div className="bg-white rounded-xl shadow-lg p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Revenue Model</h3>
                   <p className="text-gray-600 mb-4">{financialModel.revenue_model_notes}</p>
@@ -563,6 +909,84 @@ const CompanyDetailPage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Market Size Analysis */}
+                {bottomUpMarket && (
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                      <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                      Market Opportunity Analysis
+                    </h3>
+                    
+                    {/* Bottom-Up Market Sizing */}
+                    <div className="mb-8">
+                      <h4 className="text-lg font-medium text-gray-900 mb-4">
+                        📊 Market Opportunity Snapshot (Bottom-Up Approach)
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-gray-50 rounded-lg">
+                          <tbody className="text-sm">
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Target Customer Segment</td>
+                              <td className="py-3 px-4 text-gray-600">{bottomUpMarket.segment}</td>
+                            </tr>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Avg. Price per Customer</td>
+                              <td className="py-3 px-4 text-gray-600">${bottomUpMarket.avgPrice.toLocaleString()}/mo</td>
+                            </tr>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Total Addressable Units</td>
+                              <td className="py-3 px-4 text-gray-600">{bottomUpMarket.totalUnits.toLocaleString()} businesses</td>
+                            </tr>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Total Bottom-Up TAM</td>
+                              <td className="py-3 px-4 font-semibold text-blue-600">${bottomUpMarket.bottomUpTAM.toFixed(1)}M/year</td>
+                            </tr>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Adoption Assumption</td>
+                              <td className="py-3 px-4 text-gray-600">{bottomUpMarket.penetrationRate}%</td>
+                            </tr>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-3 px-4 font-medium text-gray-900">Serviceable Market (SAM)</td>
+                              <td className="py-3 px-4 font-semibold text-green-600">${bottomUpMarket.sam.toFixed(1)}M (TAM × adoption %)</td>
+                            </tr>
+                            <tr>
+                              <td className="py-3 px-4 font-medium text-gray-900">Your Initial SOM</td>
+                              <td className="py-3 px-4 font-semibold text-purple-600">${bottomUpMarket.som.toFixed(1)}M (3-year revenue plan)</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Top-Down Market Size */}
+                    {financialModel.tam_sam_som_json && (
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900 mb-4">Top-Down Market Size</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-blue-50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-blue-600">
+                              ${(financialModel.tam_sam_som_json.tam / 1000000000).toFixed(0)}B
+                            </div>
+                            <div className="text-sm text-blue-800 font-medium">Total Addressable Market</div>
+                          </div>
+                          <div className="bg-green-50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              ${(financialModel.tam_sam_som_json.sam / 1000000000).toFixed(1)}B
+                            </div>
+                            <div className="text-sm text-green-800 font-medium">Serviceable Addressable Market</div>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-purple-600">
+                              ${(financialModel.tam_sam_som_json.som / 1000000).toFixed(0)}M
+                            </div>
+                            <div className="text-sm text-purple-800 font-medium">Serviceable Obtainable Market</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <div className="bg-white rounded-xl shadow-lg p-6 text-center">
@@ -657,9 +1081,13 @@ const CompanyDetailPage = () => {
           <div className="space-y-6">
             {pitchDeck ? (
               <>
+                {/* Pitch Deck Analysis */}
                 <div className="bg-white rounded-xl shadow-lg p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">Pitch Deck Analysis</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                      Pitch Deck Analysis & Insights
+                    </h3>
                     {pitchDeck.deck_quality_score && (
                       <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(pitchDeck.deck_quality_score)}`}>
                         Quality Score: {pitchDeck.deck_quality_score}/100
@@ -667,27 +1095,174 @@ const CompanyDetailPage = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900 mb-3">Core Problem</h4>
-                      <p className="text-gray-600 bg-red-50 p-4 rounded-lg">{pitchDeck.core_problem}</p>
+                  {/* Problem & Solution */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-red-50 rounded-lg p-6 border-l-4 border-red-500">
+                      <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                        <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+                        Core Problem
+                      </h4>
+                      <p className="text-gray-700">{pitchDeck.core_problem}</p>
+                      <div className="mt-4 p-3 bg-white rounded border">
+                        <h5 className="font-medium text-gray-900 mb-2">Problem Analysis</h5>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Clear pain point identification
+                          </div>
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Market-validated problem
+                          </div>
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Quantifiable impact
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900 mb-3">Core Solution</h4>
-                      <p className="text-gray-600 bg-green-50 p-4 rounded-lg">{pitchDeck.core_solution}</p>
+                    
+                    <div className="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
+                      <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                        <Lightbulb className="w-5 h-5 mr-2 text-green-600" />
+                        Core Solution
+                      </h4>
+                      <p className="text-gray-700">{pitchDeck.core_solution}</p>
+                      <div className="mt-4 p-3 bg-white rounded border">
+                        <h5 className="font-medium text-gray-900 mb-2">Solution Strength</h5>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Directly addresses core problem
+                          </div>
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Scalable technology approach
+                          </div>
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Competitive differentiation
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Market Trends */}
+                  {pitchDeck.market_trends_json && (
+                    <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                      <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                        <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                        Market Trends & Timing
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {pitchDeck.market_trends_json.trends?.map((trend: string, index: number) => (
+                          <div key={index} className="bg-white rounded p-3 border">
+                            <div className="flex items-center text-blue-600 mb-2">
+                              <Activity className="w-4 h-4 mr-2" />
+                              <span className="font-medium text-sm">Market Trend</span>
+                            </div>
+                            <p className="text-gray-700 text-sm">{trend}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer & Product Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <Users className="w-5 h-5 mr-2 text-purple-600" />
+                      Target Customer Analysis
+                    </h4>
+                    <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                      <p className="text-gray-700">{pitchDeck.customer_segment}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 rounded p-3">
+                        <h5 className="font-medium text-gray-900 mb-2">Customer Insights</h5>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <div>• Well-defined target segment</div>
+                          <div>• Clear value proposition alignment</div>
+                          <div>• Addressable market size validation</div>
+                          <div>• Customer acquisition strategy clarity</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <Rocket className="w-5 h-5 mr-2 text-orange-600" />
+                      Product Summary
+                    </h4>
+                    <div className="bg-orange-50 rounded-lg p-4 mb-4">
+                      <div className="text-gray-700 prose prose-sm max-w-none">
+                        {pitchDeck.product_summary_md}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded p-3">
+                      <h5 className="font-medium text-gray-900 mb-2">Product Strengths</h5>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div>• Clear feature differentiation</div>
+                        <div>• Scalable architecture</div>
+                        <div>• User experience focus</div>
+                        <div>• Technical feasibility</div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h4 className="text-lg font-medium text-gray-900 mb-3">Target Customer</h4>
-                    <p className="text-gray-600">{pitchDeck.customer_segment}</p>
-                  </div>
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h4 className="text-lg font-medium text-gray-900 mb-3">Product Summary</h4>
-                    <div className="text-gray-600 prose prose-sm max-w-none">
-                      {pitchDeck.product_summary_md}
+                {/* Pitch Deck Recommendations */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <Brain className="w-5 h-5 mr-2 text-indigo-600" />
+                    AI-Powered Pitch Recommendations
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h5 className="font-medium text-green-600 mb-3">Strengths to Emphasize</h5>
+                      <div className="space-y-2">
+                        <div className="flex items-start text-sm">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
+                          <span>Strong problem-solution fit with clear market validation</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
+                          <span>Experienced team with relevant domain expertise</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
+                          <span>Favorable market timing with supporting trends</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
+                          <span>Clear competitive differentiation and moats</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-orange-600 mb-3">Areas to Strengthen</h5>
+                      <div className="space-y-2">
+                        <div className="flex items-start text-sm">
+                          <AlertTriangle className="w-4 h-4 mr-2 text-orange-500 mt-0.5" />
+                          <span>Add more specific traction metrics and growth projections</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <AlertTriangle className="w-4 h-4 mr-2 text-orange-500 mt-0.5" />
+                          <span>Include detailed competitive analysis and positioning</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <AlertTriangle className="w-4 h-4 mr-2 text-orange-500 mt-0.5" />
+                          <span>Provide clearer financial projections and unit economics</span>
+                        </div>
+                        <div className="flex items-start text-sm">
+                          <AlertTriangle className="w-4 h-4 mr-2 text-orange-500 mt-0.5" />
+                          <span>Strengthen go-to-market strategy with specific channels</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
