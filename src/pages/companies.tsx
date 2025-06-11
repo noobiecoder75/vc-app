@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2 } from 'lucide-react';
+import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2, Upload } from 'lucide-react';
 
 interface Company {
   id: string;
