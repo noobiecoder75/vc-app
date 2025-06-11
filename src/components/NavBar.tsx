@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Upload, TrendingUp } from 'lucide-react';
+import { Upload, TrendingUp, Building2, BarChart3 } from 'lucide-react';
 
 const NavBar = () => {
   const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
@@ -18,17 +20,31 @@ const NavBar = () => {
             </span>
           </Link>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1">
             <Link
               to="/dashboard"
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                location.pathname === '/dashboard'
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
+                isActive('/dashboard')
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-700 hover:text-blue-600'
+                  : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
               }`}
             >
+              <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
             </Link>
+            
+            <Link
+              to="/companies"
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
+                isActive('/companies') || location.pathname.startsWith('/company')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+              }`}
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Companies
+            </Link>
+            
             <Link
               to="/upload"
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"

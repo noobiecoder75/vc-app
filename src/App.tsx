@@ -4,6 +4,8 @@ import NavBar from './components/NavBar';
 import HomePage from './pages/index';
 import UploadPage from './pages/upload';
 import DashboardPage from './pages/dashboard';
+import CompaniesPage from './pages/companies';
+import CompanyDetailPage from './pages/company-detail';
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/companies" element={<CompaniesPage />} />
+          <Route path="/company/:id" element={<CompanyDetailPage />} />
         </Routes>
       </div>
     </Router>
