@@ -9,8 +9,8 @@ interface Company {
   industry_name: string;
   startup_stage: string;
   country: string;
-  valuation_target_usd: number;
-  funding_goal_usd: number;
+  valuation_target_usd: number | null;
+  funding_goal_usd: number | null;
   incorporation_year: number;
   pitch_deck_summary: string;
   created_at: string;
@@ -43,7 +43,8 @@ const CompaniesPage = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '$0';
     if (amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(1)}M`;
     }
@@ -236,14 +237,14 @@ const CompaniesPage = () => {
             
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(companies.reduce((sum, c) => sum + (c.valuation_target_usd || 0), 0))}
+                {formatCurrency(companies.reduce((sum, c) => sum + (c.valuation_target_usd ?? 0), 0))}
               </div>
               <div className="text-sm text-gray-600">Total Target Valuation</div>
             </div>
             
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {formatCurrency(companies.reduce((sum, c) => sum + (c.funding_goal_usd || 0), 0))}
+                {formatCurrency(companies.reduce((sum, c) => sum + (c.funding_goal_usd ?? 0), 0))}
               </div>
               <div className="text-sm text-gray-600">Total Funding Sought</div>
             </div>

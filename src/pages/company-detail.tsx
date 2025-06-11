@@ -27,8 +27,8 @@ interface Company {
   country: string;
   geo_region: string;
   startup_stage: string;
-  valuation_target_usd: number;
-  funding_goal_usd: number;
+  valuation_target_usd: number | null;
+  funding_goal_usd: number | null;
   incorporation_year: number;
   pitch_deck_summary: string;
   gpt_pitch_score: number;
@@ -56,10 +56,10 @@ interface Metric {
 
 interface FinancialModel {
   id: string;
-  monthly_revenue_usd: number;
-  burn_rate_usd: number;
-  ltv_cac_ratio: number;
-  runway_months: number;
+  monthly_revenue_usd: number | null;
+  burn_rate_usd: number | null;
+  ltv_cac_ratio: number | null;
+  runway_months: number | null;
   revenue_model_notes: string;
   model_quality_score: number;
 }
@@ -145,7 +145,7 @@ const CompanyDetailPage = () => {
         .eq('company_id', id)
         .order('id', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       setFinancialModel(financialData);
 
       // Fetch pitch deck
@@ -155,7 +155,7 @@ const CompanyDetailPage = () => {
         .eq('company_id', id)
         .order('upload_timestamp', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       setPitchDeck(pitchData);
 
       // Fetch go-to-market
@@ -163,7 +163,7 @@ const CompanyDetailPage = () => {
         .from('go_to_market')
         .select('*')
         .eq('company_id', id)
-        .single();
+        .maybeSingle();
       setGoToMarket(gtmData);
 
       // Fetch VC fit report
@@ -173,7 +173,7 @@ const CompanyDetailPage = () => {
         .eq('company_id', id)
         .order('id', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       setVcFitReport(vcData);
 
     } catch (err) {
@@ -184,7 +184,8 @@ const CompanyDetailPage = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '$0';
     if (amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(1)}M`;
     }
@@ -359,7 +360,7 @@ const CompanyDetailPage = () => {
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">
-                      {financialModel?.runway_months || 0}
+                      {financialModel?.runway_months ?? 0}
                     </div>
                     <div className="text-sm text-gray-600">Runway (months)</div>
                   </div>
@@ -537,7 +538,7 @@ const CompanyDetailPage = () => {
                       <Target className="w-5 h-5 text-blue-500" />
                     </div>
                     <div className="text-2xl font-bold text-gray-900">
-                      {financialModel.ltv_cac_ratio.toFixed(1)}:1
+                      {(financialModel.ltv_cac_ratio ?? 0).toFixed(1)}:1
                     </div>
                   </div>
 
@@ -547,7 +548,7 @@ const CompanyDetailPage = () => {
                       <Calendar className="w-5 h-5 text-purple-500" />
                     </div>
                     <div className="text-2xl font-bold text-gray-900">
-                      {financialModel.runway_months} months
+                      {financialModel.runway_months ?? 0} months
                     </div>
                   </div>
                 </div>
