@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2, Upload, Search, Filter, Star, Award, Zap, Target, BarChart3 } from 'lucide-react';
+import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2, Upload, Search, Filter, Star, Award, Zap, Target, BarChart3, Activity } from 'lucide-react';
 
 interface Company {
   id: string;
@@ -62,16 +62,23 @@ const CompaniesPage = () => {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching companies from database...');
+      
       const { data, error } = await supabase
         .from('companies')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Successfully loaded ${data?.length || 0} companies`);
       setCompanies(data || []);
     } catch (err) {
+      console.error('💥 Error fetching companies:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch companies');
-      console.error('Error fetching companies:', err);
     } finally {
       setLoading(false);
     }
@@ -411,15 +418,20 @@ const CompaniesPage = () => {
                         </div>
                       )}
 
-                      {/* View Details Button */}
-                      <Link
-                        to={`/company/${company.id}`}
-                        className="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300"
-                      >
-                        <BarChart3 className="w-4 h-4 mr-2" />
-                        View KPI Dashboard
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Link>
+                      {/* Enhanced View Details Button */}
+                      <div className="mt-auto">
+                        <Link
+                          to={`/company/${company.id}`}
+                          className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md"
+                          onClick={() => {
+                            console.log(`🔗 Navigating to company detail page: ${company.id}`);
+                          }}
+                        >
+                          <Activity className="w-4 h-4 mr-2" />
+                          View KPI Dashboard
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </div>
                     </div>
                   </GlowingCard>
                 </InsightTooltip>
