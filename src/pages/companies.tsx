@@ -141,6 +141,16 @@ const CompaniesPage = () => {
     return 'text-red-500';
   };
 
+  const handleCompanyClick = (companyId: string, companyName: string) => {
+    console.log(`🔗 User clicked on company: ${companyName} (ID: ${companyId})`);
+    console.log(`📍 Navigating to: /company/${companyId}`);
+    
+    // Add a small delay to ensure the click is registered
+    setTimeout(() => {
+      window.location.href = `/company/${companyId}`;
+    }, 100);
+  };
+
   const industries = [...new Set(companies.map(c => c.industry_name).filter(Boolean))];
   const stages = [...new Set(companies.map(c => c.startup_stage).filter(Boolean))];
 
@@ -420,17 +430,14 @@ const CompaniesPage = () => {
 
                       {/* Enhanced View Details Button */}
                       <div className="mt-auto">
-                        <Link
-                          to={`/company/${company.id}`}
+                        <button
+                          onClick={() => handleCompanyClick(company.id, company.name)}
                           className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md"
-                          onClick={() => {
-                            console.log(`🔗 Navigating to company detail page: ${company.id}`);
-                          }}
                         >
                           <Activity className="w-4 h-4 mr-2" />
                           View KPI Dashboard
                           <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </GlowingCard>

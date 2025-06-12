@@ -123,8 +123,13 @@ const CompanyDetailPage = () => {
   };
 
   useEffect(() => {
+    console.log('🔍 CompanyDetailPage mounted with ID:', id);
     if (id) {
       fetchCompanyData(id);
+    } else {
+      console.error('❌ No company ID provided in URL params');
+      setError('No company ID provided');
+      setLoading(false);
     }
   }, [id]);
 
@@ -135,7 +140,8 @@ const CompanyDetailPage = () => {
 
       console.log(`🔍 Fetching data for company ID: ${companyId}`);
 
-      // Fetch company data
+      // Fetch company data first
+      console.log('📊 Fetching company basic info...');
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .select('*')
@@ -148,6 +154,7 @@ const CompanyDetailPage = () => {
       }
 
       if (!companyData) {
+        console.error('❌ No company data returned');
         throw new Error('Company not found');
       }
 
@@ -155,6 +162,7 @@ const CompanyDetailPage = () => {
       setCompany(companyData);
 
       // Fetch related data in parallel (non-blocking)
+      console.log('📊 Fetching related data...');
       const fetchPromises = [
         supabase.from('financial_models').select('*').eq('company_id', companyId),
         supabase.from('pitch_decks').select('*').eq('company_id', companyId),
@@ -172,22 +180,42 @@ const CompanyDetailPage = () => {
       ] = await Promise.all(fetchPromises);
 
       // Set data (ignore errors for optional data)
-      if (financialError) console.warn('⚠️ Financial model fetch warning:', financialError);
-      else setFinancialModel(financialData?.[0] || null);
+      if (financialError) {
+        console.warn('⚠️ Financial model fetch warning:', financialError);
+      } else {
+        console.log('✅ Financial data loaded:', financialData);
+        setFinancialModel(financialData?.[0] || null);
+      }
 
-      if (pitchError) console.warn('⚠️ Pitch deck fetch warning:', pitchError);
-      else setPitchDeck(pitchData?.[0] || null);
+      if (pitchError) {
+        console.warn('⚠️ Pitch deck fetch warning:', pitchError);
+      } else {
+        console.log('✅ Pitch deck data loaded:', pitchData);
+        setPitchDeck(pitchData?.[0] || null);
+      }
 
-      if (gtmError) console.warn('⚠️ GTM fetch warning:', gtmError);
-      else setGoToMarket(gtmData?.[0] || null);
+      if (gtmError) {
+        console.warn('⚠️ GTM fetch warning:', gtmError);
+      } else {
+        console.log('✅ GTM data loaded:', gtmData);
+        setGoToMarket(gtmData?.[0] || null);
+      }
 
-      if (vcError) console.warn('⚠️ VC fit report fetch warning:', vcError);
-      else setVcFitReport(vcData?.[0] || null);
+      if (vcError) {
+        console.warn('⚠️ VC fit report fetch warning:', vcError);
+      } else {
+        console.log('✅ VC fit data loaded:', vcData);
+        setVcFitReport(vcData?.[0] || null);
+      }
 
-      if (foundersError) console.warn('⚠️ Founders fetch warning:', foundersError);
-      else setFounders(foundersData || []);
+      if (foundersError) {
+        console.warn('⚠️ Founders fetch warning:', foundersError);
+      } else {
+        console.log('✅ Founders data loaded:', foundersData);
+        setFounders(foundersData || []);
+      }
 
-      console.log('✅ All company data loaded successfully');
+      console.log('🎉 All company data loaded successfully');
 
     } catch (err) {
       console.error('💥 Error fetching company data:', err);
@@ -232,6 +260,11 @@ const CompanyDetailPage = () => {
     return 'text-red-600';
   };
 
+  const handleBackToCompanies = async () => {
+    console.log('🔙 Navigating back to companies page');
+    navigate('/companies');
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Building2 },
     { id: 'kpi-analysis', label: 'KPI Analysis', icon: BarChart3 },
@@ -274,10 +307,7 @@ const CompanyDetailPage = () => {
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <MorphingButton
-              onClick={async () => {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                navigate('/companies');
-              }}
+              onClick={handleBackToCompanies}
               successText="Redirecting..."
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
@@ -312,10 +342,7 @@ const CompanyDetailPage = () => {
             <MorphingButton
               variant="outline"
               className="mb-4"
-              onClick={async () => {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                navigate('/companies');
-              }}
+              onClick={handleBackToCompanies}
               successText="Going back..."
             >
               <ArrowLeft className="w-4 h-4 mr-2" />

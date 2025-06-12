@@ -15,7 +15,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <NavBar />
-          <main>
+          <main className="relative">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/upload" element={<UploadPage />} />
