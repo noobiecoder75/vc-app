@@ -15,13 +15,15 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <NavBar />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/companies" element={<CompaniesPage />} />
-            <Route path="/company/:id" element={<CompanyDetailPage />} />
-          </Routes>
+          <main>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/upload" element={<UploadPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/companies" element={<CompaniesPage />} />
+              <Route path="/company/:id" element={<CompanyDetailPage />} />
+            </Routes>
+          </main>
           <Toaster position="top-right" />
         </div>
       </Router>

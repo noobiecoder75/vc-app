@@ -9,7 +9,12 @@ import { Upload, TrendingUp, Building2, BarChart3, Sparkles, Zap } from 'lucide-
 const NavBar = () => {
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/companies' && location.pathname.startsWith('/company')) {
+      return true;
+    }
+    return location.pathname === path;
+  };
 
   const navItems = [
     {
@@ -74,8 +79,8 @@ const NavBar = () => {
               >
                 <Link
                   to={item.path}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
-                    isActive(item.path) || location.pathname.startsWith('/company')
+                  className={`relative px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
+                    isActive(item.path)
                       ? 'bg-blue-100 text-blue-700 shadow-sm'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                   }`}

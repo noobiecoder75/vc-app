@@ -12,6 +12,7 @@ interface MorphingButtonProps {
   className?: string;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'gradient';
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  disabled?: boolean;
 }
 
 type ButtonState = 'idle' | 'loading' | 'success' | 'error';
@@ -23,12 +24,13 @@ const MorphingButton: React.FC<MorphingButtonProps> = ({
   errorText = 'Error',
   className,
   variant = 'default',
-  size = 'default'
+  size = 'default',
+  disabled = false
 }) => {
   const [state, setState] = useState<ButtonState>('idle');
 
   const handleClick = async () => {
-    if (state !== 'idle') return;
+    if (state !== 'idle' || disabled) return;
 
     setState('loading');
     
@@ -111,7 +113,7 @@ const MorphingButton: React.FC<MorphingButtonProps> = ({
       variant={getButtonVariant()}
       size={size}
       onClick={handleClick}
-      disabled={state !== 'idle'}
+      disabled={state !== 'idle' || disabled}
       className={cn(
         "transition-all duration-300",
         state === 'success' && "bg-emerald-600 hover:bg-emerald-700",
