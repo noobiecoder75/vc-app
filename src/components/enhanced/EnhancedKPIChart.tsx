@@ -125,90 +125,92 @@ const EnhancedKPIChart: React.FC<EnhancedKPIChartProps> = ({
         transition={{ duration: 0.5 }}
       >
         <GlowingCard glowColor="blue" intensity="medium">
-          <CardHeader>
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div>
-                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-                  <BarChart3 className="w-7 h-7 text-blue-600" />
-                  <span>Enhanced Performance Analytics</span>
-                  <Badge variant="success" className="text-sm">
-                    <Zap className="w-3 h-3 mr-1" />
-                    AI-Powered
-                  </Badge>
-                </CardTitle>
-                <p className="text-gray-600 mt-1">
-                  Real-time insights with predictive analytics and industry benchmarking
-                </p>
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
+                    <BarChart3 className="w-7 h-7 text-blue-600" />
+                    <span>Enhanced Performance Analytics</span>
+                    <Badge variant="success" className="text-sm">
+                      <Zap className="w-3 h-3 mr-1" />
+                      AI-Powered
+                    </Badge>
+                  </CardTitle>
+                  <p className="text-gray-600 mt-1">
+                    Real-time insights with predictive analytics and industry benchmarking
+                  </p>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                    <SelectTrigger className="w-32">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7d">7 Days</SelectItem>
+                      <SelectItem value="30d">30 Days</SelectItem>
+                      <SelectItem value="90d">90 Days</SelectItem>
+                      <SelectItem value="1y">1 Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button variant="outline" size="sm">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filter
+                  </Button>
+                  
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-                  <SelectTrigger className="w-32">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">7 Days</SelectItem>
-                    <SelectItem value="30d">30 Days</SelectItem>
-                    <SelectItem value="90d">90 Days</SelectItem>
-                    <SelectItem value="1y">1 Year</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filter
-                </Button>
-                
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </div>
-            
-            {/* Overall Score with Animation */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <InsightTooltip
-                title="Overall Performance Score"
-                description="Comprehensive assessment across all key metrics"
-                insight={`Score of ${overallScore}% indicates ${overallScore >= 80 ? 'excellent' : overallScore >= 60 ? 'good' : 'needs improvement'} performance`}
-                benchmark={{
-                  value: overallScore,
-                  label: `${overallScore}% Overall`,
-                  status: overallScore >= 80 ? 'excellent' : overallScore >= 60 ? 'good' : 'average'
-                }}
-              >
-                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg p-4 cursor-help hover:shadow-md transition-shadow">
-                  <div className="text-3xl font-bold gradient-text">
-                    <AnimatedCounter value={overallScore} suffix="%" duration={2} />
+              {/* Overall Score with Animation */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <InsightTooltip
+                  title="Overall Performance Score"
+                  description="Comprehensive assessment across all key metrics"
+                  insight={`Score of ${overallScore}% indicates ${overallScore >= 80 ? 'excellent' : overallScore >= 60 ? 'good' : 'needs improvement'} performance`}
+                  benchmark={{
+                    value: overallScore,
+                    label: `${overallScore}% Overall`,
+                    status: overallScore >= 80 ? 'excellent' : overallScore >= 60 ? 'good' : 'average'
+                  }}
+                >
+                  <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg p-4 cursor-help hover:shadow-md transition-shadow">
+                    <div className="text-3xl font-bold gradient-text">
+                      <AnimatedCounter value={overallScore} suffix="%" duration={2} />
+                    </div>
+                    <div className="text-sm text-gray-600">Overall Score</div>
                   </div>
-                  <div className="text-sm text-gray-600">Overall Score</div>
+                </InsightTooltip>
+                
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-700">
+                    <AnimatedCounter value={4} duration={1.5} />
+                  </div>
+                  <div className="text-sm text-blue-600">Metrics Tracked</div>
                 </div>
-              </InsightTooltip>
-              
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-700">
-                  <AnimatedCounter value={4} duration={1.5} />
+                
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-700">
+                    <AnimatedCounter value={85} suffix="%" duration={1.8} />
+                  </div>
+                  <div className="text-sm text-purple-600">Forecast Confidence</div>
                 </div>
-                <div className="text-sm text-blue-600">Metrics Tracked</div>
+                
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-orange-700">
+                    <AnimatedCounter value={15.2} suffix="%" duration={2.2} />
+                  </div>
+                  <div className="text-sm text-orange-600">Growth Rate</div>
+                </div>
               </div>
-              
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple-700">
-                  <AnimatedCounter value={85} suffix="%" duration={1.8} />
-                </div>
-                <div className="text-sm text-purple-600">Forecast Confidence</div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-orange-700">
-                  <AnimatedCounter value={15.2} suffix="%" duration={2.2} />
-                </div>
-                <div className="text-sm text-orange-600">Growth Rate</div>
-              </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
+          </Card>
         </GlowingCard>
       </motion.div>
 
@@ -286,42 +288,44 @@ const EnhancedKPIChart: React.FC<EnhancedKPIChartProps> = ({
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <GlowingCard>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{metric.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-3xl font-bold">
-                          <AnimatedCounter 
-                            value={metric.value} 
-                            prefix={metric.unit === 'USD' ? '$' : ''}
-                            suffix={metric.unit === '%' ? '%' : ''}
-                            decimals={metric.unit === '%' ? 1 : 0}
-                          />
-                        </span>
-                        <Badge variant={metric.change > 0 ? 'success' : 'destructive'}>
-                          {metric.change > 0 ? '+' : ''}{metric.change}%
-                        </Badge>
-                      </div>
-                      
-                      {metric.forecast && (
-                        <div className="bg-blue-50 rounded-lg p-3">
-                          <div className="text-sm font-medium text-blue-900 mb-1">
-                            30-Day Forecast
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-semibold text-blue-700">
-                              {metric.unit === 'USD' ? '$' : ''}{metric.forecast.next30.toLocaleString()}{metric.unit === '%' ? '%' : ''}
-                            </span>
-                            <span className="text-sm text-blue-600">
-                              {metric.forecast.confidence}% confidence
-                            </span>
-                          </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{metric.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-3xl font-bold">
+                            <AnimatedCounter 
+                              value={metric.value} 
+                              prefix={metric.unit === 'USD' ? '$' : ''}
+                              suffix={metric.unit === '%' ? '%' : ''}
+                              decimals={metric.unit === '%' ? 1 : 0}
+                            />
+                          </span>
+                          <Badge variant={metric.change > 0 ? 'success' : 'destructive'}>
+                            {metric.change > 0 ? '+' : ''}{metric.change}%
+                          </Badge>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
+                        
+                        {metric.forecast && (
+                          <div className="bg-blue-50 rounded-lg p-3">
+                            <div className="text-sm font-medium text-blue-900 mb-1">
+                              30-Day Forecast
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg font-semibold text-blue-700">
+                                {metric.unit === 'USD' ? '$' : ''}{metric.forecast.next30.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                              </span>
+                              <span className="text-sm text-blue-600">
+                                {metric.forecast.confidence}% confidence
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </GlowingCard>
               </motion.div>
             ))}
@@ -338,49 +342,51 @@ const EnhancedKPIChart: React.FC<EnhancedKPIChartProps> = ({
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <GlowingCard>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      {metric.name}
-                      <Badge variant="outline">Industry Benchmark</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                        <div className="bg-red-50 p-2 rounded">
-                          <div className="font-semibold text-red-700">Poor</div>
-                          <div className="text-red-600">
-                            {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.poor.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        {metric.name}
+                        <Badge variant="outline">Industry Benchmark</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                          <div className="bg-red-50 p-2 rounded">
+                            <div className="font-semibold text-red-700">Poor</div>
+                            <div className="text-red-600">
+                              {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.poor.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                            </div>
+                          </div>
+                          <div className="bg-yellow-50 p-2 rounded">
+                            <div className="font-semibold text-yellow-700">Average</div>
+                            <div className="text-yellow-600">
+                              {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.average.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="font-semibold text-blue-700">Good</div>
+                            <div className="text-blue-600">
+                              {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.good.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                            </div>
+                          </div>
+                          <div className="bg-emerald-50 p-2 rounded">
+                            <div className="font-semibold text-emerald-700">Excellent</div>
+                            <div className="text-emerald-600">
+                              {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.excellent.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                            </div>
                           </div>
                         </div>
-                        <div className="bg-yellow-50 p-2 rounded">
-                          <div className="font-semibold text-yellow-700">Average</div>
-                          <div className="text-yellow-600">
-                            {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.average.toLocaleString()}{metric.unit === '%' ? '%' : ''}
+                        
+                        <div className="text-center">
+                          <div className="text-2xl font-bold mb-1">
+                            {metric.unit === 'USD' ? '$' : ''}{metric.value.toLocaleString()}{metric.unit === '%' ? '%' : ''}
                           </div>
-                        </div>
-                        <div className="bg-blue-50 p-2 rounded">
-                          <div className="font-semibold text-blue-700">Good</div>
-                          <div className="text-blue-600">
-                            {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.good.toLocaleString()}{metric.unit === '%' ? '%' : ''}
-                          </div>
-                        </div>
-                        <div className="bg-emerald-50 p-2 rounded">
-                          <div className="font-semibold text-emerald-700">Excellent</div>
-                          <div className="text-emerald-600">
-                            {metric.unit === 'USD' ? '$' : ''}{metric.benchmark.excellent.toLocaleString()}{metric.unit === '%' ? '%' : ''}
-                          </div>
+                          <div className="text-sm text-gray-600">Your Current Value</div>
                         </div>
                       </div>
-                      
-                      <div className="text-center">
-                        <div className="text-2xl font-bold mb-1">
-                          {metric.unit === 'USD' ? '$' : ''}{metric.value.toLocaleString()}{metric.unit === '%' ? '%' : ''}
-                        </div>
-                        <div className="text-sm text-gray-600">Your Current Value</div>
-                      </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  </Card>
                 </GlowingCard>
               </motion.div>
             ))}

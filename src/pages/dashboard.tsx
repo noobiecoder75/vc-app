@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import EnhancedKPIChart from '../components/enhanced/EnhancedKPIChart';
 import VCMatchCard from '../components/VCMatchCard';
 import InsightTooltip from '../components/InsightTooltip';
@@ -231,9 +232,9 @@ const DashboardPage = () => {
           <motion.div variants={itemVariants}>
             <Link
               to="/"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4 transition-colors"
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4 transition-colors group"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Home
             </Link>
           </motion.div>
@@ -312,39 +313,41 @@ const DashboardPage = () => {
                   intensity="low"
                   className="cursor-help"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-3 ${stat.bgColor} rounded-xl`}>
-                          <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-3 ${stat.bgColor} rounded-xl`}>
+                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              <AnimatedCounter 
+                                value={stat.value} 
+                                prefix={stat.label === 'Revenue' || stat.label === 'Valuation' ? '$' : ''}
+                                suffix={stat.label === 'Growth Rate' ? '%' : ''}
+                                decimals={stat.label === 'Growth Rate' ? 1 : 0}
+                                duration={1.5 + index * 0.2}
+                              />
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            <AnimatedCounter 
-                              value={stat.value} 
-                              prefix={stat.label === 'Revenue' || stat.label === 'Valuation' ? '$' : ''}
-                              suffix={stat.label === 'Growth Rate' ? '%' : ''}
-                              decimals={stat.label === 'Growth Rate' ? 1 : 0}
-                              duration={1.5 + index * 0.2}
-                            />
-                          </p>
+                        <div className={`text-sm font-medium ${stat.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {stat.change > 0 ? '+' : ''}{stat.change}%
                         </div>
                       </div>
-                      <div className={`text-sm font-medium ${stat.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {stat.change > 0 ? '+' : ''}{stat.change}%
-                      </div>
-                    </div>
-                    {stat.benchmark && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>Progress to Target</span>
-                          <span>{Math.round((stat.benchmark.current / stat.benchmark.target) * 100)}%</span>
+                      {stat.benchmark && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-gray-600">
+                            <span>Progress to Target</span>
+                            <span>{Math.round((stat.benchmark.current / stat.benchmark.target) * 100)}%</span>
+                          </div>
+                          <Progress value={(stat.benchmark.current / stat.benchmark.target) * 100} className="h-2" />
                         </div>
-                        <Progress value={(stat.benchmark.current / stat.benchmark.target) * 100} className="h-2" />
-                      </div>
-                    )}
-                  </CardContent>
+                      )}
+                    </CardContent>
+                  </Card>
                 </GlowingCard>
               </InsightTooltip>
             </motion.div>
