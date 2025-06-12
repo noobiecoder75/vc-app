@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import GlowingCard from '../components/advanced/GlowingCard';
 import AnimatedCounter from '../components/advanced/AnimatedCounter';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import MorphingButton from '../components/advanced/MorphingButton';
-import InsightTooltip from '../components/InsightTooltip';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -28,6 +27,7 @@ interface Company {
 }
 
 const CompaniesPage = () => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,13 +142,11 @@ const CompaniesPage = () => {
   };
 
   const handleCompanyClick = (companyId: string, companyName: string) => {
-    console.log(`🔗 User clicked on company: ${companyName} (ID: ${companyId})`);
-    console.log(`📍 Navigating to: /company/${companyId}`);
+    console.log(`🔗 Navigating to company: ${companyName} (ID: ${companyId})`);
+    console.log(`📍 Target URL: /company/${companyId}`);
     
-    // Add a small delay to ensure the click is registered
-    setTimeout(() => {
-      window.location.href = `/company/${companyId}`;
-    }, 100);
+    // Use React Router's navigate function
+    navigate(`/company/${companyId}`);
   };
 
   const industries = [...new Set(companies.map(c => c.industry_name).filter(Boolean))];
@@ -199,13 +197,13 @@ const CompaniesPage = () => {
           <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">No Companies Found</h2>
           <p className="text-gray-600 mb-4">Upload some startup ideas to see them here.</p>
-          <Link
-            to="/upload"
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          <Button
+            onClick={() => navigate('/upload')}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload Idea
-          </Link>
+          </Button>
         </div>
       </div>
     );
@@ -241,25 +239,18 @@ const CompaniesPage = () => {
                     </p>
                   </div>
                   
-                  <InsightTooltip
-                    title="Add New Company"
-                    description="Upload your startup idea for instant analysis"
-                    insight="Join 500+ startups that have used our platform"
-                    actionable="Get started with a free validation report"
+                  <MorphingButton
+                    variant="gradient"
+                    className="hover-glow"
+                    successText="Let's Go!"
+                    onClick={async () => {
+                      await new Promise(resolve => setTimeout(resolve, 1000));
+                      navigate('/upload');
+                    }}
                   >
-                    <MorphingButton
-                      variant="gradient"
-                      className="hover-glow"
-                      successText="Let's Go!"
-                      onClick={async () => {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        window.location.href = '/upload';
-                      }}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Add New Company
-                    </MorphingButton>
-                  </InsightTooltip>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Add New Company
+                  </MorphingButton>
                 </div>
               </div>
             </GlowingCard>
@@ -320,7 +311,7 @@ const CompaniesPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* Enhanced Companies Grid */}
+        {/* Enhanced Companies Grid - NO TOOLTIPS */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
           initial="hidden"
@@ -338,116 +329,104 @@ const CompaniesPage = () => {
                 layout
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <InsightTooltip
-                  title={company.name}
-                  description={`${company.industry_name} • ${company.startup_stage}`}
-                  insight={company.pitch_deck_summary || "Innovative startup with strong potential"}
-                  benchmark={company.gpt_pitch_score ? {
-                    value: company.gpt_pitch_score,
-                    label: `${company.gpt_pitch_score.toFixed(1)}/10 Pitch Score`,
-                    status: company.gpt_pitch_score >= 8 ? 'excellent' : company.gpt_pitch_score >= 6 ? 'good' : 'average'
-                  } : undefined}
-                  actionable="Click to view detailed KPI dashboard"
+                <GlowingCard 
+                  glowColor={index % 4 === 0 ? 'blue' : index % 4 === 1 ? 'emerald' : index % 4 === 2 ? 'purple' : 'orange'}
+                  intensity="low"
+                  className="group h-full"
                 >
-                  <GlowingCard 
-                    glowColor={index % 4 === 0 ? 'blue' : index % 4 === 1 ? 'emerald' : index % 4 === 2 ? 'purple' : 'orange'}
-                    intensity="low"
-                    className="cursor-help group h-full"
-                  >
-                    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 p-6 border border-gray-100 h-full flex flex-col">
-                      {/* Company Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                            {company.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStageColor(company.startup_stage)}`}>
-                              {company.startup_stage || 'Unknown Stage'}
+                  <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 p-6 border border-gray-100 h-full flex flex-col">
+                    {/* Company Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                          {company.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStageColor(company.startup_stage)}`}>
+                            {company.startup_stage || 'Unknown Stage'}
+                          </span>
+                          {company.industry_name && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                              {company.industry_name}
                             </span>
-                            {company.industry_name && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                                {company.industry_name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {company.gpt_pitch_score && (
-                          <div className="text-right">
-                            <div className={`text-lg font-bold ${getScoreColor(company.gpt_pitch_score)}`}>
-                              <AnimatedCounter value={company.gpt_pitch_score} decimals={1} duration={1.5} />
-                            </div>
-                            <div className="text-xs text-gray-500">Pitch Score</div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Company Details */}
-                      <div className="space-y-3 mb-6 flex-grow">
-                        {company.country && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {company.country}
-                          </div>
-                        )}
-                        
-                        {company.incorporation_year && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Founded {company.incorporation_year}
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3">
-                          {company.valuation_target_usd && (
-                            <div className="bg-blue-50 rounded-lg p-3 text-center">
-                              <div className="text-lg font-bold text-blue-600">
-                                {formatCurrency(company.valuation_target_usd)}
-                              </div>
-                              <div className="text-xs text-blue-700">Target</div>
-                            </div>
-                          )}
-
-                          {company.funding_goal_usd && (
-                            <div className="bg-purple-50 rounded-lg p-3 text-center">
-                              <div className="text-lg font-bold text-purple-600">
-                                {formatCurrency(company.funding_goal_usd)}
-                              </div>
-                              <div className="text-xs text-purple-700">Seeking</div>
-                            </div>
                           )}
                         </div>
                       </div>
+                      {company.gpt_pitch_score && (
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${getScoreColor(company.gpt_pitch_score)}`}>
+                            <AnimatedCounter value={company.gpt_pitch_score} decimals={1} duration={1.5} />
+                          </div>
+                          <div className="text-xs text-gray-500">Pitch Score</div>
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Pitch Summary */}
-                      {company.pitch_deck_summary && (
-                        <div className="mb-6">
-                          <p className="text-gray-600 text-sm line-clamp-3">
-                            {company.pitch_deck_summary}
-                          </p>
+                    {/* Company Details */}
+                    <div className="space-y-3 mb-6 flex-grow">
+                      {company.country && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2" />
+                          {company.country}
+                        </div>
+                      )}
+                      
+                      {company.incorporation_year && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Founded {company.incorporation_year}
                         </div>
                       )}
 
-                      {/* Enhanced View Details Button */}
-                      <div className="mt-auto">
-                        <button
-                          onClick={() => handleCompanyClick(company.id, company.name)}
-                          className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md"
-                        >
-                          <Activity className="w-4 h-4 mr-2" />
-                          View KPI Dashboard
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </button>
+                      <div className="grid grid-cols-2 gap-3">
+                        {company.valuation_target_usd && (
+                          <div className="bg-blue-50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-blue-600">
+                              {formatCurrency(company.valuation_target_usd)}
+                            </div>
+                            <div className="text-xs text-blue-700">Target</div>
+                          </div>
+                        )}
+
+                        {company.funding_goal_usd && (
+                          <div className="bg-purple-50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-purple-600">
+                              {formatCurrency(company.funding_goal_usd)}
+                            </div>
+                            <div className="text-xs text-purple-700">Seeking</div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </GlowingCard>
-                </InsightTooltip>
+
+                    {/* Pitch Summary */}
+                    {company.pitch_deck_summary && (
+                      <div className="mb-6">
+                        <p className="text-gray-600 text-sm line-clamp-3">
+                          {company.pitch_deck_summary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Simple Navigation Button - NO TOOLTIP */}
+                    <div className="mt-auto">
+                      <button
+                        onClick={() => handleCompanyClick(company.id, company.name)}
+                        className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md"
+                      >
+                        <Activity className="w-4 h-4 mr-2" />
+                        View KPI Dashboard
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                </GlowingCard>
               </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>
 
-        {/* Enhanced Summary Stats */}
+        {/* Enhanced Summary Stats - NO TOOLTIPS */}
         <motion.div 
           className="mt-12"
           initial="hidden"
@@ -467,57 +446,33 @@ const CompaniesPage = () => {
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <InsightTooltip
-                    title="Total Companies"
-                    description="Number of startups in our portfolio"
-                    insight="Growing portfolio of innovative startups"
-                  >
-                    <div className="text-center p-4 bg-blue-50 rounded-lg cursor-help hover:bg-blue-100 transition-colors">
-                      <div className="text-2xl font-bold text-blue-600">
-                        <AnimatedCounter value={companies.length} duration={2} />
-                      </div>
-                      <div className="text-sm text-blue-700">Total Companies</div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <div className="text-2xl font-bold text-blue-600">
+                      <AnimatedCounter value={companies.length} duration={2} />
                     </div>
-                  </InsightTooltip>
+                    <div className="text-sm text-blue-700">Total Companies</div>
+                  </div>
                   
-                  <InsightTooltip
-                    title="Total Target Valuation"
-                    description="Combined valuation targets of all companies"
-                    insight="Represents the collective ambition of our portfolio"
-                  >
-                    <div className="text-center p-4 bg-emerald-50 rounded-lg cursor-help hover:bg-emerald-100 transition-colors">
-                      <div className="text-2xl font-bold text-emerald-600">
-                        {formatCurrency(companies.reduce((sum, c) => sum + (c.valuation_target_usd ?? 0), 0))}
-                      </div>
-                      <div className="text-sm text-emerald-700">Total Target Valuation</div>
+                  <div className="text-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+                    <div className="text-2xl font-bold text-emerald-600">
+                      {formatCurrency(companies.reduce((sum, c) => sum + (c.valuation_target_usd ?? 0), 0))}
                     </div>
-                  </InsightTooltip>
+                    <div className="text-sm text-emerald-700">Total Target Valuation</div>
+                  </div>
                   
-                  <InsightTooltip
-                    title="Total Funding Sought"
-                    description="Combined funding goals across all companies"
-                    insight="Active fundraising opportunities in our portfolio"
-                  >
-                    <div className="text-center p-4 bg-purple-50 rounded-lg cursor-help hover:bg-purple-100 transition-colors">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {formatCurrency(companies.reduce((sum, c) => sum + (c.funding_goal_usd ?? 0), 0))}
-                      </div>
-                      <div className="text-sm text-purple-700">Total Funding Sought</div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {formatCurrency(companies.reduce((sum, c) => sum + (c.funding_goal_usd ?? 0), 0))}
                     </div>
-                  </InsightTooltip>
+                    <div className="text-sm text-purple-700">Total Funding Sought</div>
+                  </div>
                   
-                  <InsightTooltip
-                    title="Industries Covered"
-                    description="Number of different industries represented"
-                    insight="Diversified portfolio across multiple sectors"
-                  >
-                    <div className="text-center p-4 bg-orange-50 rounded-lg cursor-help hover:bg-orange-100 transition-colors">
-                      <div className="text-2xl font-bold text-orange-600">
-                        <AnimatedCounter value={industries.length} duration={1.8} />
-                      </div>
-                      <div className="text-sm text-orange-700">Industries</div>
+                  <div className="text-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                    <div className="text-2xl font-bold text-orange-600">
+                      <AnimatedCounter value={industries.length} duration={1.8} />
                     </div>
-                  </InsightTooltip>
+                    <div className="text-sm text-orange-700">Industries</div>
+                  </div>
                 </div>
               </div>
             </GlowingCard>
