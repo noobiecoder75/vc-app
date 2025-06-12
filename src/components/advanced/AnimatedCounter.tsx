@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 
 interface AnimatedCounterProps {

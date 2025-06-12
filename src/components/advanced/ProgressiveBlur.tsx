@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface ProgressiveBlurProps {
   children: React.ReactNode;
@@ -35,8 +35,7 @@ const ProgressiveBlur: React.FC<ProgressiveBlurProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className={cn(
-          "absolute inset-0 pointer-events-none",
-          `bg-gradient-${getGradientDirection()}`
+          "absolute inset-0 pointer-events-none"
         )}
         style={{
           background: `linear-gradient(${getGradientDirection()}, transparent 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.8) 100%)`,

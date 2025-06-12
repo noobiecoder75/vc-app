@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface GlowingCardProps {
   children: React.ReactNode;
