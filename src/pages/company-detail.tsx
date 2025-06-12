@@ -81,24 +81,24 @@ const CompanyDetailPage = () => {
 
       if (companyError) throw companyError;
 
-      // Fetch related data
+      // Fetch related data - remove .single() from queries that might not have data
       const [foundersRes, financialRes, pitchRes, metricsRes, gtmRes, vcRes] = await Promise.all([
         supabase.from('founders').select('*').eq('company_id', companyId),
-        supabase.from('financial_models').select('*').eq('company_id', companyId).single(),
-        supabase.from('pitch_decks').select('*').eq('company_id', companyId).single(),
+        supabase.from('financial_models').select('*').eq('company_id', companyId),
+        supabase.from('pitch_decks').select('*').eq('company_id', companyId),
         supabase.from('metrics').select('*').eq('company_id', companyId),
-        supabase.from('go_to_market').select('*').eq('company_id', companyId).single(),
-        supabase.from('vc_fit_reports').select('*').eq('company_id', companyId).single()
+        supabase.from('go_to_market').select('*').eq('company_id', companyId),
+        supabase.from('vc_fit_reports').select('*').eq('company_id', companyId)
       ]);
 
       setCompany({
         ...companyData,
         founders: foundersRes.data || [],
-        financial_model: financialRes.data,
-        pitch_deck: pitchRes.data,
+        financial_model: financialRes.data?.[0] || null,
+        pitch_deck: pitchRes.data?.[0] || null,
         metrics: metricsRes.data || [],
-        go_to_market: gtmRes.data,
-        vc_fit_report: vcRes.data
+        go_to_market: gtmRes.data?.[0] || null,
+        vc_fit_report: vcRes.data?.[0] || null
       });
 
     } catch (err) {
