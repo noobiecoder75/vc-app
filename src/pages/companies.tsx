@@ -141,12 +141,18 @@ const CompaniesPage = () => {
     return 'text-red-500';
   };
 
-  const handleCompanyClick = (companyId: string, companyName: string) => {
-    console.log(`🔗 Navigating to company: ${companyName} (ID: ${companyId})`);
+  // FIXED: Simple, direct navigation function
+  const navigateToCompany = (companyId: string, companyName: string) => {
+    console.log(`🚀 NAVIGATION: Clicking company ${companyName} (ID: ${companyId})`);
     console.log(`📍 Target URL: /company/${companyId}`);
     
-    // Use React Router's navigate function
-    navigate(`/company/${companyId}`);
+    try {
+      // Use React Router's navigate function directly
+      navigate(`/company/${companyId}`);
+      console.log('✅ Navigation command executed successfully');
+    } catch (error) {
+      console.error('❌ Navigation failed:', error);
+    }
   };
 
   const industries = [...new Set(companies.map(c => c.industry_name).filter(Boolean))];
@@ -311,7 +317,7 @@ const CompaniesPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* Enhanced Companies Grid - NO TOOLTIPS */}
+        {/* Companies Grid - COMPLETELY CLEAN NAVIGATION */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
           initial="hidden"
@@ -408,11 +414,18 @@ const CompaniesPage = () => {
                       </div>
                     )}
 
-                    {/* Simple Navigation Button - NO TOOLTIP */}
+                    {/* FIXED: Direct Navigation Button */}
                     <div className="mt-auto">
                       <button
-                        onClick={() => handleCompanyClick(company.id, company.name)}
-                        className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md"
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log(`🎯 BUTTON CLICKED: ${company.name}`);
+                          navigateToCompany(company.id, company.name);
+                        }}
+                        className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-all duration-200 font-medium group border border-blue-200 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                       >
                         <Activity className="w-4 h-4 mr-2" />
                         View KPI Dashboard
@@ -426,7 +439,7 @@ const CompaniesPage = () => {
           </AnimatePresence>
         </motion.div>
 
-        {/* Enhanced Summary Stats - NO TOOLTIPS */}
+        {/* Enhanced Summary Stats */}
         <motion.div 
           className="mt-12"
           initial="hidden"
