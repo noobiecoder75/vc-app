@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2, Upload, Search, Filter, Star, Award, Zap, Target } from 'lucide-react';
+import { Building2, Users, DollarSign, TrendingUp, MapPin, Calendar, ArrowRight, Loader2, Upload, Search, Filter, Star, Award, Zap, Target, BarChart3 } from 'lucide-react';
 
 interface Company {
   id: string;
