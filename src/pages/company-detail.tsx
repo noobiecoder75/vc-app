@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Progress } from '../components/ui/progress';
+import LiveKPIChart from '../components/LiveKPIChart';
+import KPIAnalysis from '../components/KPIAnalysis';
 import GlowingCard from '../components/advanced/GlowingCard';
 import AnimatedCounter from '../components/advanced/AnimatedCounter';
-import MorphingButton from '../components/advanced/MorphingButton';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import DataVisualization from '../components/advanced/DataVisualization';
 import InteractiveHeatmap from '../components/advanced/InteractiveHeatmap';
 import MetricComparison from '../components/advanced/MetricComparison';
 import InsightTooltip from '../components/InsightTooltip';
-import LiveKPIChart from '../components/LiveKPIChart';
-import KPIAnalysis from '../components/KPIAnalysis';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Progress } from '../components/ui/progress';
 import { 
   ArrowLeft, 
   Building2, 
@@ -36,10 +35,9 @@ import {
   Award,
   Brain,
   Activity,
-  Sparkles,
-  PieChart,
-  LineChart,
-  TrendingDown
+  CheckCircle,
+  TrendingDown,
+  PieChart
 } from 'lucide-react';
 
 interface Company {
@@ -104,7 +102,6 @@ interface Founder {
 
 const CompanyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [financialModel, setFinancialModel] = useState<FinancialModel | null>(null);
   const [pitchDeck, setPitchDeck] = useState<PitchDeck | null>(null);
@@ -131,13 +128,8 @@ const CompanyDetailPage = () => {
   };
 
   useEffect(() => {
-    console.log('🔍 CompanyDetailPage mounted with ID:', id);
     if (id) {
       fetchCompanyData(id);
-    } else {
-      console.error('❌ No company ID provided in URL params');
-      setError('No company ID provided');
-      setLoading(false);
     }
   }, [id]);
 
@@ -146,87 +138,49 @@ const CompanyDetailPage = () => {
       setLoading(true);
       setError('');
 
-      console.log(`🔍 Fetching data for company ID: ${companyId}`);
+      console.log(`🔍 Fetching data for company: ${companyId}`);
 
-      // Fetch company data first
-      console.log('📊 Fetching company basic info...');
+      // Fetch company data
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .select('*')
         .eq('id', companyId)
         .single();
 
-      if (companyError) {
-        console.error('❌ Company fetch error:', companyError);
-        throw new Error(`Company not found: ${companyError.message}`);
-      }
-
-      if (!companyData) {
-        console.error('❌ No company data returned');
-        throw new Error('Company not found');
-      }
-
-      console.log('✅ Company data loaded:', companyData);
+      if (companyError) throw companyError;
       setCompany(companyData);
+      console.log('✅ Company data loaded:', companyData);
 
-      // Fetch related data in parallel (non-blocking)
-      console.log('📊 Fetching related data...');
-      const fetchPromises = [
+      // Fetch all related data in parallel
+      const [financialResult, pitchResult, gtmResult, vcResult, foundersResult] = await Promise.allSettled([
         supabase.from('financial_models').select('*').eq('company_id', companyId),
         supabase.from('pitch_decks').select('*').eq('company_id', companyId),
         supabase.from('go_to_market').select('*').eq('company_id', companyId),
         supabase.from('vc_fit_reports').select('*').eq('company_id', companyId),
         supabase.from('founders').select('*').eq('company_id', companyId)
-      ];
+      ]);
 
-      const [
-        { data: financialData, error: financialError },
-        { data: pitchData, error: pitchError },
-        { data: gtmData, error: gtmError },
-        { data: vcData, error: vcError },
-        { data: foundersData, error: foundersError }
-      ] = await Promise.all(fetchPromises);
-
-      // Set data (ignore errors for optional data)
-      if (financialError) {
-        console.warn('⚠️ Financial model fetch warning:', financialError);
-      } else {
-        console.log('✅ Financial data loaded:', financialData);
-        setFinancialModel(financialData?.[0] || null);
+      // Process results
+      if (financialResult.status === 'fulfilled' && !financialResult.value.error) {
+        setFinancialModel(financialResult.value.data?.[0] || null);
+      }
+      if (pitchResult.status === 'fulfilled' && !pitchResult.value.error) {
+        setPitchDeck(pitchResult.value.data?.[0] || null);
+      }
+      if (gtmResult.status === 'fulfilled' && !gtmResult.value.error) {
+        setGoToMarket(gtmResult.value.data?.[0] || null);
+      }
+      if (vcResult.status === 'fulfilled' && !vcResult.value.error) {
+        setVcFitReport(vcResult.value.data?.[0] || null);
+      }
+      if (foundersResult.status === 'fulfilled' && !foundersResult.value.error) {
+        setFounders(foundersResult.value.data || []);
       }
 
-      if (pitchError) {
-        console.warn('⚠️ Pitch deck fetch warning:', pitchError);
-      } else {
-        console.log('✅ Pitch deck data loaded:', pitchData);
-        setPitchDeck(pitchData?.[0] || null);
-      }
-
-      if (gtmError) {
-        console.warn('⚠️ GTM fetch warning:', gtmError);
-      } else {
-        console.log('✅ GTM data loaded:', gtmData);
-        setGoToMarket(gtmData?.[0] || null);
-      }
-
-      if (vcError) {
-        console.warn('⚠️ VC fit report fetch warning:', vcError);
-      } else {
-        console.log('✅ VC fit data loaded:', vcData);
-        setVcFitReport(vcData?.[0] || null);
-      }
-
-      if (foundersError) {
-        console.warn('⚠️ Founders fetch warning:', foundersError);
-      } else {
-        console.log('✅ Founders data loaded:', foundersData);
-        setFounders(foundersData || []);
-      }
-
-      console.log('🎉 All company data loaded successfully');
+      console.log('✅ All company data loaded successfully');
 
     } catch (err) {
-      console.error('💥 Error fetching company data:', err);
+      console.error('❌ Error fetching company data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch company data');
     } finally {
       setLoading(false);
@@ -268,11 +222,6 @@ const CompanyDetailPage = () => {
     return 'text-red-600';
   };
 
-  const handleBackToCompanies = async () => {
-    console.log('🔙 Navigating back to companies page');
-    navigate('/companies');
-  };
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Building2 },
     { id: 'kpi-analysis', label: 'KPI Analysis', icon: BarChart3 },
@@ -282,11 +231,11 @@ const CompanyDetailPage = () => {
     { id: 'vc-matching', label: 'VC Matching', icon: Users },
   ];
 
-  // Sample data for enhanced visualizations
+  // Sample data for visualizations
   const performanceData = [
     { name: 'Revenue', value: financialModel?.monthly_revenue_usd || 125000, change: 15.2, trend: 'up' as const, color: '#10B981' },
     { name: 'Burn Rate', value: financialModel?.burn_rate_usd || 85000, change: -8.3, trend: 'down' as const, color: '#EF4444' },
-    { name: 'LTV/CAC', value: financialModel?.ltv_cac_ratio || 4.2, change: 12.4, trend: 'up' as const, color: '#8B5CF6' },
+    { name: 'LTV/CAC', value: financialModel?.ltv_cac_ratio || 4.2, change: 12.4, trend: 'up' as const, color: '#3B82F6' },
     { name: 'Runway', value: financialModel?.runway_months || 18, change: -2.1, trend: 'down' as const, color: '#F59E0B' }
   ];
 
@@ -305,6 +254,15 @@ const CompanyDetailPage = () => {
       previous: 108000,
       benchmark: 100000,
       target: 150000,
+      unit: 'USD',
+      category: 'Financial'
+    },
+    {
+      name: 'Burn Rate',
+      current: financialModel?.burn_rate_usd || 85000,
+      previous: 92000,
+      benchmark: 80000,
+      target: 75000,
       unit: 'USD',
       category: 'Financial'
     },
@@ -340,9 +298,6 @@ const CompanyDetailPage = () => {
             <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4" />
           </motion.div>
           <p className="text-gray-600">Loading company details...</p>
-          {id && (
-            <p className="text-sm text-gray-500 mt-2">Company ID: {id}</p>
-          )}
         </div>
       </div>
     );
@@ -356,25 +311,13 @@ const CompanyDetailPage = () => {
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Company Not Found</h2>
           <p className="text-red-600 mb-4">{error || 'The requested company could not be found.'}</p>
-          {id && (
-            <p className="text-sm text-gray-500 mb-4">Attempted to load company ID: {id}</p>
-          )}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <MorphingButton
-              onClick={handleBackToCompanies}
-              successText="Redirecting..."
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Companies
-            </MorphingButton>
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-            >
-              Try Again
-            </Button>
-          </div>
+          <Link
+            to="/companies"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Companies
+          </Link>
         </div>
       </div>
     );
@@ -382,7 +325,7 @@ const CompanyDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <ParticleBackground particleCount={25} color="#3B82F6" speed={0.3} />
+      <ParticleBackground particleCount={30} color="#3B82F6" speed={0.3} />
       
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Enhanced Header */}
@@ -393,19 +336,17 @@ const CompanyDetailPage = () => {
           variants={containerVariants}
         >
           <motion.div variants={itemVariants}>
-            <MorphingButton
-              variant="outline"
-              className="mb-4"
-              onClick={handleBackToCompanies}
-              successText="Going back..."
+            <Link
+              to="/companies"
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4 transition-colors group"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Companies
-            </MorphingButton>
+            </Link>
           </motion.div>
           
           <motion.div variants={itemVariants}>
-            <GlowingCard glowColor="blue" intensity="high">
+            <GlowingCard glowColor="blue" intensity="medium">
               <Card>
                 <CardHeader>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -415,78 +356,40 @@ const CompanyDetailPage = () => {
                         <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStageColor(company.startup_stage)}`}>
                           {company.startup_stage || 'Unknown Stage'}
                         </span>
-                        {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
-                          <Badge variant="outline" className="ml-2">
+                        {company.gpt_pitch_score && (
+                          <Badge variant="info" className="ml-2">
                             <Star className="w-3 h-3 mr-1" />
-                            <AnimatedCounter value={company.gpt_pitch_score} decimals={1} duration={2} />
-                            /10
+                            {company.gpt_pitch_score.toFixed(1)}/10
                           </Badge>
                         )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         {company.industry_name && (
-                          <InsightTooltip
-                            title="Industry"
-                            description={`Operating in ${company.industry_name} sector`}
-                            insight="Industry classification helps with benchmarking and VC matching"
-                          >
-                            <div className="flex items-center text-gray-600 cursor-help">
-                              <Building2 className="w-4 h-4 mr-2" />
-                              <span className="text-sm">{company.industry_name}</span>
-                            </div>
-                          </InsightTooltip>
+                          <div className="flex items-center text-gray-600">
+                            <Building2 className="w-4 h-4 mr-2" />
+                            <span className="text-sm">{company.industry_name}</span>
+                          </div>
                         )}
                         
                         {company.country && (
-                          <InsightTooltip
-                            title="Location"
-                            description={`Based in ${company.country}`}
-                            insight="Geographic location affects market access and regulatory environment"
-                          >
-                            <div className="flex items-center text-gray-600 cursor-help">
-                              <MapPin className="w-4 h-4 mr-2" />
-                              <span className="text-sm">{company.country}</span>
-                            </div>
-                          </InsightTooltip>
+                          <div className="flex items-center text-gray-600">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            <span className="text-sm">{company.country}</span>
+                          </div>
                         )}
                         
                         {company.incorporation_year && (
-                          <InsightTooltip
-                            title="Founded"
-                            description={`Incorporated in ${company.incorporation_year}`}
-                            insight="Company age indicates experience and market validation time"
-                          >
-                            <div className="flex items-center text-gray-600 cursor-help">
-                              <Calendar className="w-4 h-4 mr-2" />
-                              <span className="text-sm">Founded {company.incorporation_year}</span>
-                            </div>
-                          </InsightTooltip>
+                          <div className="flex items-center text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            <span className="text-sm">Founded {company.incorporation_year}</span>
+                          </div>
                         )}
                         
-                        {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
-                          <InsightTooltip
-                            title="AI Pitch Score"
-                            description="AI-generated assessment of pitch quality"
-                            insight={`Score of ${company.gpt_pitch_score.toFixed(1)}/10 indicates ${
-                              company.gpt_pitch_score >= 8 ? 'excellent' : 
-                              company.gpt_pitch_score >= 6 ? 'good' : 'needs improvement'
-                            } pitch quality`}
-                            benchmark={{
-                              value: company.gpt_pitch_score * 10,
-                              label: `${company.gpt_pitch_score.toFixed(1)}/10`,
-                              status: company.gpt_pitch_score >= 8 ? 'excellent' : 
-                                     company.gpt_pitch_score >= 6 ? 'good' : 'average'
-                            }}
-                          >
-                            <div className="flex items-center text-gray-600 cursor-help">
-                              <Brain className="w-4 h-4 mr-2" />
-                              <span className={`text-sm font-medium ${getScoreColor(company.gpt_pitch_score)}`}>
-                                AI Score: {company.gpt_pitch_score.toFixed(1)}/10
-                              </span>
-                            </div>
-                          </InsightTooltip>
-                        )}
+                        <div className="flex items-center text-gray-600">
+                          <Activity className="w-4 h-4 mr-2" />
+                          <span className="text-sm">Live Data</span>
+                        </div>
                       </div>
 
                       {company.pitch_deck_summary && (
@@ -497,33 +400,21 @@ const CompanyDetailPage = () => {
                     <div className="mt-6 lg:mt-0 lg:ml-8">
                       <div className="grid grid-cols-2 gap-4">
                         {company.valuation_target_usd && (
-                          <InsightTooltip
-                            title="Target Valuation"
-                            description="Company's valuation goal"
-                            insight="Target valuation indicates growth ambitions and market opportunity"
-                          >
-                            <div className="text-center p-4 bg-blue-50 rounded-lg cursor-help hover:bg-blue-100 transition-colors">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {formatCurrency(company.valuation_target_usd)}
-                              </div>
-                              <div className="text-sm text-blue-700">Target Valuation</div>
+                          <div className="text-center p-4 bg-blue-50 rounded-lg">
+                            <div className="text-2xl font-bold text-blue-600">
+                              <AnimatedCounter value={company.valuation_target_usd / 1000000} suffix="M" prefix="$" decimals={1} duration={2} />
                             </div>
-                          </InsightTooltip>
+                            <div className="text-sm text-blue-700">Target Valuation</div>
+                          </div>
                         )}
                         
                         {company.funding_goal_usd && (
-                          <InsightTooltip
-                            title="Funding Goal"
-                            description="Amount seeking to raise"
-                            insight="Funding goal reflects capital needs for growth and expansion"
-                          >
-                            <div className="text-center p-4 bg-purple-50 rounded-lg cursor-help hover:bg-purple-100 transition-colors">
-                              <div className="text-2xl font-bold text-purple-600">
-                                {formatCurrency(company.funding_goal_usd)}
-                              </div>
-                              <div className="text-sm text-purple-700">Funding Goal</div>
+                          <div className="text-center p-4 bg-purple-50 rounded-lg">
+                            <div className="text-2xl font-bold text-purple-600">
+                              <AnimatedCounter value={company.funding_goal_usd / 1000000} suffix="M" prefix="$" decimals={1} duration={2.2} />
                             </div>
-                          </InsightTooltip>
+                            <div className="text-sm text-purple-700">Funding Goal</div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -542,520 +433,508 @@ const CompanyDetailPage = () => {
           variants={containerVariants}
         >
           <motion.div variants={itemVariants}>
-            <GlowingCard glowColor="purple" intensity="medium">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-                <Card>
-                  <div className="border-b border-gray-200">
-                    <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-transparent p-1">
+            <GlowingCard glowColor="purple" intensity="low">
+              <Card>
+                <CardContent className="p-0">
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+                    <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto p-2">
                       {tabs.map((tab) => {
                         const Icon = tab.icon;
                         return (
                           <TabsTrigger
                             key={tab.id}
                             value={tab.id}
-                            className="flex items-center space-x-2 py-3 px-4 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 transition-all duration-200"
+                            className="flex flex-col items-center space-y-1 py-3 px-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
                           >
                             <Icon className="w-4 h-4" />
-                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="text-xs font-medium">{tab.label}</span>
                           </TabsTrigger>
                         );
                       })}
                     </TabsList>
-                  </div>
-
-                  {/* Tab Content */}
-                  <div className="p-6">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <TabsContent value="overview" className="mt-0">
-                          <div className="space-y-8">
-                            {/* Live KPI Chart */}
-                            <GlowingCard glowColor="emerald" intensity="medium">
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center">
-                                    <Activity className="w-5 h-5 text-emerald-600 mr-2" />
-                                    Live KPI Dashboard
-                                    <Badge variant="success" className="ml-2">
-                                      <Zap className="w-3 h-3 mr-1" />
-                                      Real-time
-                                    </Badge>
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <LiveKPIChart companyId={company.id} companyName={company.name} />
-                                </CardContent>
-                              </Card>
-                            </GlowingCard>
-
-                            {/* Performance Visualization */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                              <DataVisualization
-                                title="Key Performance Metrics"
-                                data={performanceData}
-                                type="metric"
-                                showTrends={true}
-                                showBenchmarks={true}
-                              />
-                              
-                              <InteractiveHeatmap
-                                title="Performance Heatmap"
-                                data={heatmapData}
-                                colorScheme="blue"
-                                showLabels={false}
-                              />
-                            </div>
-
-                            {/* Team Information */}
-                            {founders.length > 0 && (
-                              <GlowingCard glowColor="blue" intensity="medium">
-                                <Card>
-                                  <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                      <Users className="w-5 h-5 text-blue-600 mr-2" />
-                                      Founding Team
-                                      <Badge variant="info" className="ml-2">
-                                        <Award className="w-3 h-3 mr-1" />
-                                        {founders.length} Founder{founders.length !== 1 ? 's' : ''}
-                                      </Badge>
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      {founders.map((founder, index) => (
-                                        <motion.div 
-                                          key={index}
-                                          initial={{ opacity: 0, x: -20 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          transition={{ delay: index * 0.1 }}
-                                        >
-                                          <InsightTooltip
-                                            title={founder.full_name || 'Unknown Founder'}
-                                            description={`${founder.domain_experience_yrs || 0} years experience`}
-                                            insight={founder.notable_achievements || 'Experienced founder with domain expertise'}
-                                            benchmark={founder.founder_fit_score ? {
-                                              value: founder.founder_fit_score * 10,
-                                              label: `${founder.founder_fit_score.toFixed(1)}/10 Fit Score`,
-                                              status: founder.founder_fit_score >= 8 ? 'excellent' : 
-                                                     founder.founder_fit_score >= 6 ? 'good' : 'average'
-                                            } : undefined}
-                                          >
-                                            <Card className="hover:shadow-md transition-all duration-200 cursor-help">
-                                              <CardContent className="p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                  <h4 className="font-medium text-gray-900">{founder.full_name || 'Unknown'}</h4>
-                                                  {founder.founder_fit_score !== null && founder.founder_fit_score !== undefined && (
-                                                    <span className={`text-sm font-medium ${getScoreColor(founder.founder_fit_score)}`}>
-                                                      <AnimatedCounter value={founder.founder_fit_score} decimals={1} duration={1.5} />
-                                                      /10
-                                                    </span>
-                                                  )}
-                                                </div>
-                                                {founder.domain_experience_yrs && (
-                                                  <p className="text-sm text-gray-600 mb-2">
-                                                    <AnimatedCounter value={founder.domain_experience_yrs} duration={1.2} /> years domain experience
-                                                  </p>
-                                                )}
-                                                {founder.notable_achievements && (
-                                                  <p className="text-sm text-gray-700 mb-2">{founder.notable_achievements}</p>
-                                                )}
-                                                {founder.technical_skills && founder.technical_skills.length > 0 && (
-                                                  <div className="flex flex-wrap gap-1">
-                                                    {founder.technical_skills.slice(0, 3).map((skill, skillIndex) => (
-                                                      <span key={skillIndex} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                                                        {skill}
-                                                      </span>
-                                                    ))}
-                                                    {founder.technical_skills.length > 3 && (
-                                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                                        +{founder.technical_skills.length - 3} more
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                )}
-                                              </CardContent>
-                                            </Card>
-                                          </InsightTooltip>
-                                        </motion.div>
-                                      ))}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </GlowingCard>
-                            )}
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="kpi-analysis" className="mt-0">
-                          <KPIAnalysis 
-                            companyId={company.id} 
-                            companyName={company.name}
-                            industry={company.industry_name}
-                            stage={company.startup_stage}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="financial" className="mt-0">
-                          <div className="space-y-8">
-                            <GlowingCard glowColor="emerald" intensity="medium">
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center">
-                                    <DollarSign className="w-5 h-5 text-emerald-600 mr-2" />
-                                    Financial Model Analysis
-                                    <Badge variant="success" className="ml-2">
-                                      <Sparkles className="w-3 h-3 mr-1" />
-                                      AI-Analyzed
-                                    </Badge>
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  {financialModel ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                      <InsightTooltip
-                                        title="Monthly Revenue"
-                                        description="Current monthly recurring revenue"
-                                        insight="Strong MRR indicates product-market fit and scalable business model"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-emerald-50">
-                                            <div className="text-2xl font-bold text-emerald-600 mb-2">
-                                              {formatCurrency(financialModel.monthly_revenue_usd)}
-                                            </div>
-                                            <div className="text-sm text-emerald-700">Monthly Revenue</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="Burn Rate"
-                                        description="Monthly cash burn rate"
-                                        insight="Burn rate determines runway and funding needs"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-red-50">
-                                            <div className="text-2xl font-bold text-red-600 mb-2">
-                                              {formatCurrency(financialModel.burn_rate_usd)}
-                                            </div>
-                                            <div className="text-sm text-red-700">Monthly Burn Rate</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="LTV/CAC Ratio"
-                                        description="Customer lifetime value to acquisition cost ratio"
-                                        insight="Ratio >3:1 indicates healthy unit economics"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-blue-50">
-                                            <div className="text-2xl font-bold text-blue-600 mb-2">
-                                              {financialModel.ltv_cac_ratio !== null && financialModel.ltv_cac_ratio !== undefined 
-                                                ? <><AnimatedCounter value={financialModel.ltv_cac_ratio} decimals={1} duration={1.5} />:1</>
-                                                : 'N/A'}
-                                            </div>
-                                            <div className="text-sm text-blue-700">LTV/CAC Ratio</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="Runway"
-                                        description="Months of cash remaining at current burn rate"
-                                        insight="18+ months runway is ideal for fundraising"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-purple-50">
-                                            <div className="text-2xl font-bold text-purple-600 mb-2">
-                                              {financialModel.runway_months !== null && financialModel.runway_months !== undefined 
-                                                ? <><AnimatedCounter value={financialModel.runway_months} decimals={0} duration={1.8} /> months</>
-                                                : 'N/A'}
-                                            </div>
-                                            <div className="text-sm text-purple-700">Runway</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                    </div>
-                                  ) : (
-                                    <div className="text-center py-8">
-                                      <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                      <p className="text-gray-600">No financial model data available</p>
-                                      <p className="text-sm text-gray-500 mt-2">Upload financial documents to see detailed analysis</p>
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            </GlowingCard>
-
-                            {/* Metric Comparison */}
-                            <MetricComparison
-                              title="Financial Performance vs Benchmarks"
-                              metrics={comparisonMetrics}
-                              timeframe="vs Last Month"
-                              showBenchmarks={true}
-                              showTargets={true}
-                            />
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="pitch" className="mt-0">
-                          <GlowingCard glowColor="purple" intensity="medium">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="flex items-center">
-                                  <FileText className="w-5 h-5 text-purple-600 mr-2" />
-                                  Pitch Deck Analysis
-                                  {pitchDeck?.deck_quality_score && (
-                                    <Badge variant="info" className="ml-2">
-                                      <Star className="w-3 h-3 mr-1" />
-                                      {pitchDeck.deck_quality_score.toFixed(1)}/10
-                                    </Badge>
-                                  )}
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                {pitchDeck ? (
-                                  <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      <InsightTooltip
-                                        title="Core Problem"
-                                        description="The main problem being solved"
-                                        insight="Clear problem definition is crucial for investor understanding"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-4 bg-red-50">
-                                            <h4 className="font-medium text-red-900 mb-2">Core Problem</h4>
-                                            <p className="text-red-800">{pitchDeck.core_problem || 'Not specified'}</p>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="Core Solution"
-                                        description="The proposed solution"
-                                        insight="Solution should directly address the identified problem"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-4 bg-emerald-50">
-                                            <h4 className="font-medium text-emerald-900 mb-2">Core Solution</h4>
-                                            <p className="text-emerald-800">{pitchDeck.core_solution || 'Not specified'}</p>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                    </div>
-                                    
-                                    <InsightTooltip
-                                      title="Target Customer"
-                                      description="Primary customer segment"
-                                      insight="Well-defined customer segment indicates market focus"
-                                    >
-                                      <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                        <CardContent className="p-4 bg-blue-50">
-                                          <h4 className="font-medium text-blue-900 mb-2">Target Customer Segment</h4>
-                                          <p className="text-blue-800">{pitchDeck.customer_segment || 'Not specified'}</p>
-                                        </CardContent>
-                                      </Card>
-                                    </InsightTooltip>
-                                    
-                                    {pitchDeck.product_summary_md && (
-                                      <Card>
-                                        <CardContent className="p-4 bg-gray-50">
-                                          <h4 className="font-medium text-gray-900 mb-2">Product Summary</h4>
-                                          <div className="prose prose-sm max-w-none text-gray-700">
-                                            <pre className="whitespace-pre-wrap">{pitchDeck.product_summary_md}</pre>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-600">No pitch deck data available</p>
-                                    <p className="text-sm text-gray-500 mt-2">Upload your pitch deck to see detailed analysis</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </GlowingCard>
-                        </TabsContent>
-
-                        <TabsContent value="market" className="mt-0">
-                          <GlowingCard glowColor="orange" intensity="medium">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="flex items-center">
-                                  <Globe className="w-5 h-5 text-orange-600 mr-2" />
-                                  Market Size Analysis
-                                  <Badge variant="warning" className="ml-2">
-                                    <Target className="w-3 h-3 mr-1" />
-                                    TAM/SAM/SOM
-                                  </Badge>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                {financialModel?.tam_sam_som_json ? (
-                                  <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                      <InsightTooltip
-                                        title="Total Addressable Market"
-                                        description="The total market demand for the product"
-                                        insight="TAM represents the maximum revenue opportunity"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-blue-50">
-                                            <div className="text-3xl font-bold text-blue-600 mb-2">
-                                              {formatCurrency(financialModel.tam_sam_som_json.tam)}
-                                            </div>
-                                            <div className="text-sm text-blue-700 font-medium">Total Addressable Market</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="Serviceable Addressable Market"
-                                        description="The portion of TAM that can be served"
-                                        insight="SAM represents the realistic market opportunity"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-purple-50">
-                                            <div className="text-3xl font-bold text-purple-600 mb-2">
-                                              {formatCurrency(financialModel.tam_sam_som_json.sam)}
-                                            </div>
-                                            <div className="text-sm text-purple-700 font-medium">Serviceable Addressable Market</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                      
-                                      <InsightTooltip
-                                        title="Serviceable Obtainable Market"
-                                        description="The portion of SAM that can realistically be captured"
-                                        insight="SOM represents the near-term market opportunity"
-                                      >
-                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                          <CardContent className="p-6 text-center bg-emerald-50">
-                                            <div className="text-3xl font-bold text-emerald-600 mb-2">
-                                              {formatCurrency(financialModel.tam_sam_som_json.som)}
-                                            </div>
-                                            <div className="text-sm text-emerald-700 font-medium">Serviceable Obtainable Market</div>
-                                          </CardContent>
-                                        </Card>
-                                      </InsightTooltip>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-600">No market size data available</p>
-                                    <p className="text-sm text-gray-500 mt-2">Upload market research to see TAM/SAM/SOM analysis</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </GlowingCard>
-                        </TabsContent>
-
-                        <TabsContent value="vc-matching" className="mt-0">
-                          <GlowingCard glowColor="pink" intensity="medium">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="flex items-center">
-                                  <Users className="w-5 h-5 text-pink-600 mr-2" />
-                                  VC Matching Analysis
-                                  {vcFitReport?.funding_probability && (
-                                    <Badge variant="info" className="ml-2">
-                                      <TrendingUp className="w-3 h-3 mr-1" />
-                                      {(vcFitReport.funding_probability * 100).toFixed(0)}% Probability
-                                    </Badge>
-                                  )}
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                {vcFitReport ? (
-                                  <div className="space-y-6">
-                                    {vcFitReport.matched_vcs_json?.matches && (
-                                      <div>
-                                        <h4 className="font-medium text-gray-900 mb-4">Matched VCs</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                          {vcFitReport.matched_vcs_json.matches.map((vc: any, index: number) => (
-                                            <motion.div 
-                                              key={index}
-                                              initial={{ opacity: 0, y: 20 }}
-                                              animate={{ opacity: 1, y: 0 }}
-                                              transition={{ delay: index * 0.1 }}
-                                            >
-                                              <InsightTooltip
-                                                title={vc.name}
-                                                description={vc.focus}
-                                                insight={`${vc.fit_score}% match based on industry, stage, and investment criteria`}
-                                                benchmark={{
-                                                  value: vc.fit_score,
-                                                  label: `${vc.fit_score}% Match`,
-                                                  status: vc.fit_score >= 80 ? 'excellent' : vc.fit_score >= 60 ? 'good' : 'average'
-                                                }}
-                                              >
-                                                <Card className="cursor-help hover:shadow-md transition-all duration-200">
-                                                  <CardContent className="p-4">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                      <h5 className="font-medium text-gray-900">{vc.name}</h5>
-                                                      <span className="text-sm font-medium text-blue-600">
-                                                        <AnimatedCounter value={vc.fit_score} duration={1.5} />% match
-                                                      </span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600">{vc.focus}</p>
-                                                  </CardContent>
-                                                </Card>
-                                              </InsightTooltip>
-                                            </motion.div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {vcFitReport.requirements_to_improve && vcFitReport.requirements_to_improve.length > 0 && (
-                                      <div>
-                                        <h4 className="font-medium text-gray-900 mb-4">Areas for Improvement</h4>
-                                        <ul className="space-y-2">
-                                          {vcFitReport.requirements_to_improve.map((requirement, index) => (
-                                            <motion.li 
-                                              key={index}
-                                              initial={{ opacity: 0, x: -20 }}
-                                              animate={{ opacity: 1, x: 0 }}
-                                              transition={{ delay: index * 0.1 }}
-                                              className="flex items-start"
-                                            >
-                                              <Target className="w-4 h-4 text-orange-500 mr-2 mt-0.5" />
-                                              <span className="text-sm text-gray-700">{requirement}</span>
-                                            </motion.li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-600">No VC matching data available</p>
-                                    <p className="text-sm text-gray-500 mt-2">Complete your profile to get matched with relevant investors</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </GlowingCard>
-                        </TabsContent>
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
-                </Card>
-              </Tabs>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </GlowingCard>
           </motion.div>
+        </motion.div>
+
+        {/* Enhanced Tab Content */}
+        <motion.div 
+          className="space-y-8"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Live KPI Chart */}
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="emerald" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <BarChart3 className="w-5 h-5 text-emerald-600 mr-2" />
+                              Live KPI Dashboard
+                              <Badge variant="success" className="ml-2">
+                                <Zap className="w-3 h-3 mr-1" />
+                                Real-time
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <LiveKPIChart companyId={company.id} companyName={company.name} />
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+
+                    {/* Performance Heatmap */}
+                    <motion.div variants={itemVariants}>
+                      <InteractiveHeatmap
+                        title="Performance Heatmap"
+                        data={heatmapData}
+                        colorScheme="blue"
+                        showLabels={false}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Team Information */}
+                  {founders.length > 0 && (
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="purple" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Users className="w-5 h-5 text-purple-600 mr-2" />
+                              Founding Team
+                              <Badge variant="info" className="ml-2">
+                                <Award className="w-3 h-3 mr-1" />
+                                {founders.length} Founders
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {founders.map((founder, index) => (
+                                <motion.div
+                                  key={index}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.1 }}
+                                >
+                                  <InsightTooltip
+                                    title={founder.full_name || 'Unknown Founder'}
+                                    description={`${founder.domain_experience_yrs || 0} years experience`}
+                                    insight={founder.notable_achievements || 'Experienced founder with domain expertise'}
+                                    benchmark={founder.founder_fit_score ? {
+                                      value: founder.founder_fit_score,
+                                      label: `${founder.founder_fit_score.toFixed(1)}/10 Fit Score`,
+                                      status: founder.founder_fit_score >= 8 ? 'excellent' : founder.founder_fit_score >= 6 ? 'good' : 'average'
+                                    } : undefined}
+                                  >
+                                    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-help">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <h4 className="font-medium text-gray-900">{founder.full_name || 'Unknown'}</h4>
+                                        {founder.founder_fit_score && (
+                                          <span className={`text-sm font-medium ${getScoreColor(founder.founder_fit_score)}`}>
+                                            {founder.founder_fit_score.toFixed(1)}/10
+                                          </span>
+                                        )}
+                                      </div>
+                                      {founder.domain_experience_yrs && (
+                                        <p className="text-sm text-gray-600 mb-2">
+                                          {founder.domain_experience_yrs} years domain experience
+                                        </p>
+                                      )}
+                                      {founder.notable_achievements && (
+                                        <p className="text-sm text-gray-700 mb-2">{founder.notable_achievements}</p>
+                                      )}
+                                      {founder.technical_skills && founder.technical_skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {founder.technical_skills.slice(0, 3).map((skill, skillIndex) => (
+                                            <span key={skillIndex} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                              {skill}
+                                            </span>
+                                          ))}
+                                          {founder.technical_skills.length > 3 && (
+                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                              +{founder.technical_skills.length - 3} more
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </InsightTooltip>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+                  )}
+                </TabsContent>
+
+                {/* KPI Analysis Tab */}
+                <TabsContent value="kpi-analysis" className="space-y-8">
+                  <motion.div variants={itemVariants}>
+                    <KPIAnalysis 
+                      companyId={company.id} 
+                      companyName={company.name}
+                      industry={company.industry_name}
+                      stage={company.startup_stage}
+                    />
+                  </motion.div>
+                </TabsContent>
+
+                {/* Financial Model Tab */}
+                <TabsContent value="financial" className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Financial Metrics */}
+                    <motion.div variants={itemVariants}>
+                      <DataVisualization
+                        title="Financial Performance"
+                        data={performanceData}
+                        type="metric"
+                        showTrends={true}
+                        showBenchmarks={true}
+                      />
+                    </motion.div>
+
+                    {/* Metric Comparison */}
+                    <motion.div variants={itemVariants}>
+                      <MetricComparison
+                        title="Financial vs Benchmarks"
+                        metrics={comparisonMetrics}
+                        timeframe="vs Last Month"
+                        showBenchmarks={true}
+                        showTargets={true}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Detailed Financial Data */}
+                  {financialModel && (
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="emerald" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <DollarSign className="w-5 h-5 text-emerald-600 mr-2" />
+                              Financial Model Details
+                              <Badge variant="success" className="ml-2">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Validated
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                              <div className="bg-emerald-50 rounded-lg p-4 text-center">
+                                <div className="text-2xl font-bold text-emerald-600">
+                                  <AnimatedCounter value={financialModel.monthly_revenue_usd || 0} prefix="$" duration={2} />
+                                </div>
+                                <div className="text-sm text-emerald-700">Monthly Revenue</div>
+                              </div>
+                              <div className="bg-red-50 rounded-lg p-4 text-center">
+                                <div className="text-2xl font-bold text-red-600">
+                                  <AnimatedCounter value={financialModel.burn_rate_usd || 0} prefix="$" duration={2.2} />
+                                </div>
+                                <div className="text-sm text-red-700">Monthly Burn Rate</div>
+                              </div>
+                              <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  <AnimatedCounter value={financialModel.ltv_cac_ratio || 0} suffix=":1" decimals={1} duration={2.4} />
+                                </div>
+                                <div className="text-sm text-blue-700">LTV/CAC Ratio</div>
+                              </div>
+                              <div className="bg-purple-50 rounded-lg p-4 text-center">
+                                <div className="text-2xl font-bold text-purple-600">
+                                  <AnimatedCounter value={financialModel.runway_months || 0} suffix=" mo" duration={2.6} />
+                                </div>
+                                <div className="text-sm text-purple-700">Runway</div>
+                              </div>
+                            </div>
+                            {financialModel.revenue_model_notes && (
+                              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                <h4 className="font-medium text-gray-900 mb-2">Revenue Model Notes</h4>
+                                <p className="text-gray-700 text-sm">{financialModel.revenue_model_notes}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+                  )}
+                </TabsContent>
+
+                {/* Pitch Deck Tab */}
+                <TabsContent value="pitch" className="space-y-8">
+                  {pitchDeck ? (
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="blue" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                              Pitch Deck Analysis
+                              {pitchDeck.deck_quality_score && (
+                                <Badge variant="info" className="ml-2">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  {pitchDeck.deck_quality_score.toFixed(1)}/10
+                                </Badge>
+                              )}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-red-50 rounded-lg p-4">
+                                  <h4 className="font-medium text-red-900 mb-2 flex items-center">
+                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                    Core Problem
+                                  </h4>
+                                  <p className="text-red-800 text-sm">{pitchDeck.core_problem || 'Not specified'}</p>
+                                </div>
+                                <div className="bg-emerald-50 rounded-lg p-4">
+                                  <h4 className="font-medium text-emerald-900 mb-2 flex items-center">
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Core Solution
+                                  </h4>
+                                  <p className="text-emerald-800 text-sm">{pitchDeck.core_solution || 'Not specified'}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="bg-blue-50 rounded-lg p-4">
+                                <h4 className="font-medium text-blue-900 mb-2 flex items-center">
+                                  <Target className="w-4 h-4 mr-2" />
+                                  Target Customer Segment
+                                </h4>
+                                <p className="text-blue-800 text-sm">{pitchDeck.customer_segment || 'Not specified'}</p>
+                              </div>
+                              
+                              {pitchDeck.product_summary_md && (
+                                <div className="bg-purple-50 rounded-lg p-4">
+                                  <h4 className="font-medium text-purple-900 mb-2 flex items-center">
+                                    <Building2 className="w-4 h-4 mr-2" />
+                                    Product Summary
+                                  </h4>
+                                  <div className="prose prose-sm max-w-none text-purple-800">
+                                    <pre className="whitespace-pre-wrap text-sm">{pitchDeck.product_summary_md}</pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+                  ) : (
+                    <motion.div variants={itemVariants}>
+                      <div className="text-center py-12">
+                        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Pitch Deck Data</h3>
+                        <p className="text-gray-600">Upload a pitch deck to see detailed analysis here.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </TabsContent>
+
+                {/* Market Size Tab */}
+                <TabsContent value="market" className="space-y-8">
+                  {financialModel?.tam_sam_som_json ? (
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="emerald" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Globe className="w-5 h-5 text-emerald-600 mr-2" />
+                              Market Size Analysis
+                              <Badge variant="success" className="ml-2">
+                                <Brain className="w-3 h-3 mr-1" />
+                                AI Analyzed
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                              <div className="bg-blue-50 rounded-lg p-6 text-center">
+                                <PieChart className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                                <div className="text-3xl font-bold text-blue-600 mb-2">
+                                  <AnimatedCounter value={financialModel.tam_sam_som_json.tam / 1000000000} suffix="B" prefix="$" decimals={1} duration={2} />
+                                </div>
+                                <div className="text-sm text-blue-700 font-medium">Total Addressable Market</div>
+                                <div className="text-xs text-blue-600 mt-1">Maximum market opportunity</div>
+                              </div>
+                              <div className="bg-purple-50 rounded-lg p-6 text-center">
+                                <Target className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                                <div className="text-3xl font-bold text-purple-600 mb-2">
+                                  <AnimatedCounter value={financialModel.tam_sam_som_json.sam / 1000000000} suffix="B" prefix="$" decimals={1} duration={2.2} />
+                                </div>
+                                <div className="text-sm text-purple-700 font-medium">Serviceable Addressable Market</div>
+                                <div className="text-xs text-purple-600 mt-1">Realistic target market</div>
+                              </div>
+                              <div className="bg-emerald-50 rounded-lg p-6 text-center">
+                                <TrendingUp className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+                                <div className="text-3xl font-bold text-emerald-600 mb-2">
+                                  <AnimatedCounter value={financialModel.tam_sam_som_json.som / 1000000} suffix="M" prefix="$" decimals={0} duration={2.4} />
+                                </div>
+                                <div className="text-sm text-emerald-700 font-medium">Serviceable Obtainable Market</div>
+                                <div className="text-xs text-emerald-600 mt-1">Near-term opportunity</div>
+                              </div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg p-6">
+                              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                                <Brain className="w-4 h-4 text-blue-600 mr-2" />
+                                Market Insights
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="font-medium text-gray-700">Market Penetration:</span>
+                                  <span className="text-gray-600 ml-2">
+                                    {((financialModel.tam_sam_som_json.som / financialModel.tam_sam_som_json.sam) * 100).toFixed(1)}% of SAM
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">Growth Potential:</span>
+                                  <span className="text-emerald-600 ml-2 font-medium">High</span>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+                  ) : (
+                    <motion.div variants={itemVariants}>
+                      <div className="text-center py-12">
+                        <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Market Data</h3>
+                        <p className="text-gray-600">Market size analysis will appear here when available.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </TabsContent>
+
+                {/* VC Matching Tab */}
+                <TabsContent value="vc-matching" className="space-y-8">
+                  {vcFitReport ? (
+                    <motion.div variants={itemVariants}>
+                      <GlowingCard glowColor="purple" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Users className="w-5 h-5 text-purple-600 mr-2" />
+                              VC Matching Analysis
+                              {vcFitReport.funding_probability && (
+                                <Badge variant="info" className="ml-2">
+                                  <TrendingUp className="w-3 h-3 mr-1" />
+                                  {vcFitReport.funding_probability.toFixed(0)}% Probability
+                                </Badge>
+                              )}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-6">
+                              {vcFitReport.matched_vcs_json?.matches && (
+                                <div>
+                                  <h4 className="font-medium text-gray-900 mb-4 flex items-center">
+                                    <Award className="w-4 h-4 text-purple-600 mr-2" />
+                                    Matched VCs
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {vcFitReport.matched_vcs_json.matches.map((vc: any, index: number) => (
+                                      <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                      >
+                                        <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                          <div className="flex items-center justify-between mb-2">
+                                            <h5 className="font-medium text-gray-900">{vc.name}</h5>
+                                            <span className="text-sm font-medium text-purple-600">{vc.fit_score}% match</span>
+                                          </div>
+                                          <p className="text-sm text-gray-600 mb-2">{vc.focus}</p>
+                                          <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <motion.div
+                                              className="bg-purple-500 h-2 rounded-full"
+                                              initial={{ width: 0 }}
+                                              animate={{ width: `${vc.fit_score}%` }}
+                                              transition={{ duration: 1, delay: index * 0.2 }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {vcFitReport.requirements_to_improve && vcFitReport.requirements_to_improve.length > 0 && (
+                                <div className="bg-orange-50 rounded-lg p-4">
+                                  <h4 className="font-medium text-orange-900 mb-3 flex items-center">
+                                    <Target className="w-4 h-4 mr-2" />
+                                    Areas for Improvement
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {vcFitReport.requirements_to_improve.map((requirement, index) => (
+                                      <li key={index} className="flex items-start text-sm text-orange-800">
+                                        <span className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0" />
+                                        {requirement}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {vcFitReport.funding_probability && (
+                                <div className="bg-emerald-50 rounded-lg p-4">
+                                  <h4 className="font-medium text-emerald-900 mb-2 flex items-center">
+                                    <TrendingUp className="w-4 h-4 mr-2" />
+                                    Funding Probability
+                                  </h4>
+                                  <div className="flex items-center space-x-4">
+                                    <div className="text-3xl font-bold text-emerald-600">
+                                      <AnimatedCounter value={vcFitReport.funding_probability} suffix="%" duration={2} />
+                                    </div>
+                                    <div className="flex-1">
+                                      <Progress value={vcFitReport.funding_probability} className="h-3" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </motion.div>
+                  ) : (
+                    <motion.div variants={itemVariants}>
+                      <div className="text-center py-12">
+                        <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No VC Matching Data</h3>
+                        <p className="text-gray-600">VC matching analysis will appear here when available.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </TabsContent>
+              </motion.div>
+            </AnimatePresence>
+          </Tabs>
         </motion.div>
       </div>
     </div>
