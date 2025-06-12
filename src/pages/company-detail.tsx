@@ -8,61 +8,61 @@ import KPIAnalysis from '../components/KPIAnalysis';
 interface Company {
   id: string;
   name: string;
-  industry_name: string;
-  sub_industry_name: string;
-  startup_stage: string;
-  country: string;
-  geo_region: string;
+  industry_name: string | null;
+  sub_industry_name: string | null;
+  startup_stage: string | null;
+  country: string | null;
+  geo_region: string | null;
   valuation_target_usd: number | null;
   funding_goal_usd: number | null;
-  incorporation_year: number;
-  pitch_deck_summary: string;
-  gpt_pitch_score: number;
+  incorporation_year: number | null;
+  pitch_deck_summary: string | null;
+  gpt_pitch_score: number | null;
   created_at: string;
 }
 
 interface FinancialModel {
-  monthly_revenue_usd: number;
-  burn_rate_usd: number;
-  ltv_cac_ratio: number;
-  runway_months: number;
-  revenue_model_notes: string;
-  tam_sam_som_json: any;
-  model_quality_score: number;
+  monthly_revenue_usd: number | null;
+  burn_rate_usd: number | null;
+  ltv_cac_ratio: number | null;
+  runway_months: number | null;
+  revenue_model_notes: string | null;
+  tam_sam_som_json: any | null;
+  model_quality_score: number | null;
 }
 
 interface PitchDeck {
-  core_problem: string;
-  core_solution: string;
-  customer_segment: string;
-  product_summary_md: string;
-  market_trends_json: any;
-  deck_quality_score: number;
+  core_problem: string | null;
+  core_solution: string | null;
+  customer_segment: string | null;
+  product_summary_md: string | null;
+  market_trends_json: any | null;
+  deck_quality_score: number | null;
 }
 
 interface GoToMarket {
-  gtm_channels: string[];
-  gtm_notes_md: string;
-  gtm_strength_score: number;
+  gtm_channels: string[] | null;
+  gtm_notes_md: string | null;
+  gtm_strength_score: number | null;
 }
 
 interface VCFitReport {
-  matched_vcs_json: any;
-  similar_startup_cases: string[];
-  requirements_to_improve: string[];
-  fit_score_breakdown: any;
-  investor_synopsis_md: string;
-  funding_probability: number;
+  matched_vcs_json: any | null;
+  similar_startup_cases: string[] | null;
+  requirements_to_improve: string[] | null;
+  fit_score_breakdown: any | null;
+  investor_synopsis_md: string | null;
+  funding_probability: number | null;
 }
 
 interface Founder {
-  full_name: string;
-  linkedin_url: string;
-  education_history: string[];
-  domain_experience_yrs: number;
-  technical_skills: string[];
-  notable_achievements: string;
-  founder_fit_score: number;
+  full_name: string | null;
+  linkedin_url: string | null;
+  education_history: string[] | null;
+  domain_experience_yrs: number | null;
+  technical_skills: string[] | null;
+  notable_achievements: string | null;
+  founder_fit_score: number | null;
 }
 
 const CompanyDetailPage = () => {
@@ -177,7 +177,7 @@ const CompanyDetailPage = () => {
     return `$${amount.toLocaleString()}`;
   };
 
-  const getStageColor = (stage: string) => {
+  const getStageColor = (stage: string | null) => {
     switch (stage?.toLowerCase()) {
       case 'pre-seed':
         return 'bg-gray-100 text-gray-800';
@@ -194,7 +194,8 @@ const CompanyDetailPage = () => {
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null) => {
+    if (score === null || score === undefined) return 'text-gray-500';
     if (score >= 8) return 'text-green-600';
     if (score >= 6) return 'text-yellow-600';
     return 'text-red-600';
@@ -284,7 +285,7 @@ const CompanyDetailPage = () => {
                     </div>
                   )}
                   
-                  {company.gpt_pitch_score && (
+                  {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
                     <div className="flex items-center text-gray-600">
                       <Star className="w-4 h-4 mr-2" />
                       <span className={`text-sm font-medium ${getScoreColor(company.gpt_pitch_score)}`}>
@@ -367,8 +368,8 @@ const CompanyDetailPage = () => {
                     {founders.map((founder, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{founder.full_name}</h4>
-                          {founder.founder_fit_score && (
+                          <h4 className="font-medium text-gray-900">{founder.full_name || 'Unknown'}</h4>
+                          {founder.founder_fit_score !== null && founder.founder_fit_score !== undefined && (
                             <span className={`text-sm font-medium ${getScoreColor(founder.founder_fit_score)}`}>
                               {founder.founder_fit_score.toFixed(1)}/10
                             </span>
@@ -427,13 +428,17 @@ const CompanyDetailPage = () => {
                   </div>
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="text-2xl font-bold text-blue-600">
-                      {financialModel.ltv_cac_ratio.toFixed(1)}:1
+                      {financialModel.ltv_cac_ratio !== null && financialModel.ltv_cac_ratio !== undefined 
+                        ? `${financialModel.ltv_cac_ratio.toFixed(1)}:1` 
+                        : 'N/A'}
                     </div>
                     <div className="text-sm text-blue-700">LTV/CAC Ratio</div>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="text-2xl font-bold text-purple-600">
-                      {financialModel.runway_months.toFixed(0)} months
+                      {financialModel.runway_months !== null && financialModel.runway_months !== undefined 
+                        ? `${financialModel.runway_months.toFixed(0)} months` 
+                        : 'N/A'}
                     </div>
                     <div className="text-sm text-purple-700">Runway</div>
                   </div>
@@ -455,16 +460,16 @@ const CompanyDetailPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Core Problem</h4>
-                      <p className="text-gray-700">{pitchDeck.core_problem}</p>
+                      <p className="text-gray-700">{pitchDeck.core_problem || 'Not specified'}</p>
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Core Solution</h4>
-                      <p className="text-gray-700">{pitchDeck.core_solution}</p>
+                      <p className="text-gray-700">{pitchDeck.core_solution || 'Not specified'}</p>
                     </div>
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Target Customer Segment</h4>
-                    <p className="text-gray-700">{pitchDeck.customer_segment}</p>
+                    <p className="text-gray-700">{pitchDeck.customer_segment || 'Not specified'}</p>
                   </div>
                   {pitchDeck.product_summary_md && (
                     <div>
