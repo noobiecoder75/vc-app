@@ -6,12 +6,17 @@ import GlowingCard from '../components/advanced/GlowingCard';
 import AnimatedCounter from '../components/advanced/AnimatedCounter';
 import MorphingButton from '../components/advanced/MorphingButton';
 import ParticleBackground from '../components/advanced/ParticleBackground';
+import DataVisualization from '../components/advanced/DataVisualization';
+import InteractiveHeatmap from '../components/advanced/InteractiveHeatmap';
+import MetricComparison from '../components/advanced/MetricComparison';
 import InsightTooltip from '../components/InsightTooltip';
 import LiveKPIChart from '../components/LiveKPIChart';
 import KPIAnalysis from '../components/KPIAnalysis';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Progress } from '../components/ui/progress';
 import { 
   ArrowLeft, 
   Building2, 
@@ -31,7 +36,10 @@ import {
   Award,
   Brain,
   Activity,
-  Sparkles
+  Sparkles,
+  PieChart,
+  LineChart,
+  TrendingDown
 } from 'lucide-react';
 
 interface Company {
@@ -274,6 +282,52 @@ const CompanyDetailPage = () => {
     { id: 'vc-matching', label: 'VC Matching', icon: Users },
   ];
 
+  // Sample data for enhanced visualizations
+  const performanceData = [
+    { name: 'Revenue', value: financialModel?.monthly_revenue_usd || 125000, change: 15.2, trend: 'up' as const, color: '#10B981' },
+    { name: 'Burn Rate', value: financialModel?.burn_rate_usd || 85000, change: -8.3, trend: 'down' as const, color: '#EF4444' },
+    { name: 'LTV/CAC', value: financialModel?.ltv_cac_ratio || 4.2, change: 12.4, trend: 'up' as const, color: '#8B5CF6' },
+    { name: 'Runway', value: financialModel?.runway_months || 18, change: -2.1, trend: 'down' as const, color: '#F59E0B' }
+  ];
+
+  const heatmapData = Array.from({ length: 40 }, (_, i) => ({
+    x: i % 8,
+    y: Math.floor(i / 8),
+    value: Math.floor(Math.random() * 100) + 1,
+    label: `Metric ${i + 1}`,
+    category: ['Revenue', 'Users', 'Growth', 'Retention'][Math.floor(Math.random() * 4)]
+  }));
+
+  const comparisonMetrics = [
+    {
+      name: 'Monthly Revenue',
+      current: financialModel?.monthly_revenue_usd || 125000,
+      previous: 108000,
+      benchmark: 100000,
+      target: 150000,
+      unit: 'USD',
+      category: 'Financial'
+    },
+    {
+      name: 'LTV/CAC Ratio',
+      current: financialModel?.ltv_cac_ratio || 4.2,
+      previous: 3.8,
+      benchmark: 3.0,
+      target: 5.0,
+      unit: ':1',
+      category: 'Unit Economics'
+    },
+    {
+      name: 'Runway',
+      current: financialModel?.runway_months || 18,
+      previous: 20,
+      benchmark: 12,
+      target: 24,
+      unit: 'months',
+      category: 'Financial'
+    }
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center relative overflow-hidden">
@@ -352,128 +406,130 @@ const CompanyDetailPage = () => {
           
           <motion.div variants={itemVariants}>
             <GlowingCard glowColor="blue" intensity="high">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-4">
-                      <h1 className="text-3xl font-bold text-gray-900 mr-4">{company.name}</h1>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStageColor(company.startup_stage)}`}>
-                        {company.startup_stage || 'Unknown Stage'}
-                      </span>
-                      {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
-                        <Badge variant="outline" className="ml-2">
-                          <Star className="w-3 h-3 mr-1" />
-                          <AnimatedCounter value={company.gpt_pitch_score} decimals={1} duration={2} />
-                          /10
-                        </Badge>
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-4">
+                        <h1 className="text-3xl font-bold text-gray-900 mr-4">{company.name}</h1>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStageColor(company.startup_stage)}`}>
+                          {company.startup_stage || 'Unknown Stage'}
+                        </span>
+                        {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
+                          <Badge variant="outline" className="ml-2">
+                            <Star className="w-3 h-3 mr-1" />
+                            <AnimatedCounter value={company.gpt_pitch_score} decimals={1} duration={2} />
+                            /10
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        {company.industry_name && (
+                          <InsightTooltip
+                            title="Industry"
+                            description={`Operating in ${company.industry_name} sector`}
+                            insight="Industry classification helps with benchmarking and VC matching"
+                          >
+                            <div className="flex items-center text-gray-600 cursor-help">
+                              <Building2 className="w-4 h-4 mr-2" />
+                              <span className="text-sm">{company.industry_name}</span>
+                            </div>
+                          </InsightTooltip>
+                        )}
+                        
+                        {company.country && (
+                          <InsightTooltip
+                            title="Location"
+                            description={`Based in ${company.country}`}
+                            insight="Geographic location affects market access and regulatory environment"
+                          >
+                            <div className="flex items-center text-gray-600 cursor-help">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              <span className="text-sm">{company.country}</span>
+                            </div>
+                          </InsightTooltip>
+                        )}
+                        
+                        {company.incorporation_year && (
+                          <InsightTooltip
+                            title="Founded"
+                            description={`Incorporated in ${company.incorporation_year}`}
+                            insight="Company age indicates experience and market validation time"
+                          >
+                            <div className="flex items-center text-gray-600 cursor-help">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              <span className="text-sm">Founded {company.incorporation_year}</span>
+                            </div>
+                          </InsightTooltip>
+                        )}
+                        
+                        {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
+                          <InsightTooltip
+                            title="AI Pitch Score"
+                            description="AI-generated assessment of pitch quality"
+                            insight={`Score of ${company.gpt_pitch_score.toFixed(1)}/10 indicates ${
+                              company.gpt_pitch_score >= 8 ? 'excellent' : 
+                              company.gpt_pitch_score >= 6 ? 'good' : 'needs improvement'
+                            } pitch quality`}
+                            benchmark={{
+                              value: company.gpt_pitch_score * 10,
+                              label: `${company.gpt_pitch_score.toFixed(1)}/10`,
+                              status: company.gpt_pitch_score >= 8 ? 'excellent' : 
+                                     company.gpt_pitch_score >= 6 ? 'good' : 'average'
+                            }}
+                          >
+                            <div className="flex items-center text-gray-600 cursor-help">
+                              <Brain className="w-4 h-4 mr-2" />
+                              <span className={`text-sm font-medium ${getScoreColor(company.gpt_pitch_score)}`}>
+                                AI Score: {company.gpt_pitch_score.toFixed(1)}/10
+                              </span>
+                            </div>
+                          </InsightTooltip>
+                        )}
+                      </div>
+
+                      {company.pitch_deck_summary && (
+                        <p className="text-gray-700 leading-relaxed">{company.pitch_deck_summary}</p>
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      {company.industry_name && (
-                        <InsightTooltip
-                          title="Industry"
-                          description={`Operating in ${company.industry_name} sector`}
-                          insight="Industry classification helps with benchmarking and VC matching"
-                        >
-                          <div className="flex items-center text-gray-600 cursor-help">
-                            <Building2 className="w-4 h-4 mr-2" />
-                            <span className="text-sm">{company.industry_name}</span>
-                          </div>
-                        </InsightTooltip>
-                      )}
-                      
-                      {company.country && (
-                        <InsightTooltip
-                          title="Location"
-                          description={`Based in ${company.country}`}
-                          insight="Geographic location affects market access and regulatory environment"
-                        >
-                          <div className="flex items-center text-gray-600 cursor-help">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            <span className="text-sm">{company.country}</span>
-                          </div>
-                        </InsightTooltip>
-                      )}
-                      
-                      {company.incorporation_year && (
-                        <InsightTooltip
-                          title="Founded"
-                          description={`Incorporated in ${company.incorporation_year}`}
-                          insight="Company age indicates experience and market validation time"
-                        >
-                          <div className="flex items-center text-gray-600 cursor-help">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            <span className="text-sm">Founded {company.incorporation_year}</span>
-                          </div>
-                        </InsightTooltip>
-                      )}
-                      
-                      {company.gpt_pitch_score !== null && company.gpt_pitch_score !== undefined && (
-                        <InsightTooltip
-                          title="AI Pitch Score"
-                          description="AI-generated assessment of pitch quality"
-                          insight={`Score of ${company.gpt_pitch_score.toFixed(1)}/10 indicates ${
-                            company.gpt_pitch_score >= 8 ? 'excellent' : 
-                            company.gpt_pitch_score >= 6 ? 'good' : 'needs improvement'
-                          } pitch quality`}
-                          benchmark={{
-                            value: company.gpt_pitch_score * 10,
-                            label: `${company.gpt_pitch_score.toFixed(1)}/10`,
-                            status: company.gpt_pitch_score >= 8 ? 'excellent' : 
-                                   company.gpt_pitch_score >= 6 ? 'good' : 'average'
-                          }}
-                        >
-                          <div className="flex items-center text-gray-600 cursor-help">
-                            <Brain className="w-4 h-4 mr-2" />
-                            <span className={`text-sm font-medium ${getScoreColor(company.gpt_pitch_score)}`}>
-                              AI Score: {company.gpt_pitch_score.toFixed(1)}/10
-                            </span>
-                          </div>
-                        </InsightTooltip>
-                      )}
-                    </div>
-
-                    {company.pitch_deck_summary && (
-                      <p className="text-gray-700 leading-relaxed">{company.pitch_deck_summary}</p>
-                    )}
-                  </div>
-                  
-                  <div className="mt-6 lg:mt-0 lg:ml-8">
-                    <div className="grid grid-cols-2 gap-4">
-                      {company.valuation_target_usd && (
-                        <InsightTooltip
-                          title="Target Valuation"
-                          description="Company's valuation goal"
-                          insight="Target valuation indicates growth ambitions and market opportunity"
-                        >
-                          <div className="text-center p-4 bg-blue-50 rounded-lg cursor-help hover:bg-blue-100 transition-colors">
-                            <div className="text-2xl font-bold text-blue-600">
-                              {formatCurrency(company.valuation_target_usd)}
+                    <div className="mt-6 lg:mt-0 lg:ml-8">
+                      <div className="grid grid-cols-2 gap-4">
+                        {company.valuation_target_usd && (
+                          <InsightTooltip
+                            title="Target Valuation"
+                            description="Company's valuation goal"
+                            insight="Target valuation indicates growth ambitions and market opportunity"
+                          >
+                            <div className="text-center p-4 bg-blue-50 rounded-lg cursor-help hover:bg-blue-100 transition-colors">
+                              <div className="text-2xl font-bold text-blue-600">
+                                {formatCurrency(company.valuation_target_usd)}
+                              </div>
+                              <div className="text-sm text-blue-700">Target Valuation</div>
                             </div>
-                            <div className="text-sm text-blue-700">Target Valuation</div>
-                          </div>
-                        </InsightTooltip>
-                      )}
-                      
-                      {company.funding_goal_usd && (
-                        <InsightTooltip
-                          title="Funding Goal"
-                          description="Amount seeking to raise"
-                          insight="Funding goal reflects capital needs for growth and expansion"
-                        >
-                          <div className="text-center p-4 bg-purple-50 rounded-lg cursor-help hover:bg-purple-100 transition-colors">
-                            <div className="text-2xl font-bold text-purple-600">
-                              {formatCurrency(company.funding_goal_usd)}
+                          </InsightTooltip>
+                        )}
+                        
+                        {company.funding_goal_usd && (
+                          <InsightTooltip
+                            title="Funding Goal"
+                            description="Amount seeking to raise"
+                            insight="Funding goal reflects capital needs for growth and expansion"
+                          >
+                            <div className="text-center p-4 bg-purple-50 rounded-lg cursor-help hover:bg-purple-100 transition-colors">
+                              <div className="text-2xl font-bold text-purple-600">
+                                {formatCurrency(company.funding_goal_usd)}
+                              </div>
+                              <div className="text-sm text-purple-700">Funding Goal</div>
                             </div>
-                            <div className="text-sm text-purple-700">Funding Goal</div>
-                          </div>
-                        </InsightTooltip>
-                      )}
+                          </InsightTooltip>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </CardHeader>
+              </Card>
             </GlowingCard>
           </motion.div>
         </motion.div>
@@ -488,7 +544,7 @@ const CompanyDetailPage = () => {
           <motion.div variants={itemVariants}>
             <GlowingCard glowColor="purple" intensity="medium">
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-                <div className="bg-white rounded-xl shadow-lg">
+                <Card>
                   <div className="border-b border-gray-200">
                     <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-transparent p-1">
                       {tabs.map((tab) => {
@@ -518,91 +574,119 @@ const CompanyDetailPage = () => {
                         transition={{ duration: 0.3 }}
                       >
                         <TabsContent value="overview" className="mt-0">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="space-y-8">
                             {/* Live KPI Chart */}
                             <GlowingCard glowColor="emerald" intensity="medium">
-                              <div className="bg-white rounded-lg p-6">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                  <Activity className="w-5 h-5 text-emerald-600 mr-2" />
-                                  Live KPI Dashboard
-                                  <Badge variant="success" className="ml-2">
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    Real-time
-                                  </Badge>
-                                </h3>
-                                <LiveKPIChart companyId={company.id} companyName={company.name} />
-                              </div>
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center">
+                                    <Activity className="w-5 h-5 text-emerald-600 mr-2" />
+                                    Live KPI Dashboard
+                                    <Badge variant="success" className="ml-2">
+                                      <Zap className="w-3 h-3 mr-1" />
+                                      Real-time
+                                    </Badge>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <LiveKPIChart companyId={company.id} companyName={company.name} />
+                                </CardContent>
+                              </Card>
                             </GlowingCard>
+
+                            {/* Performance Visualization */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                              <DataVisualization
+                                title="Key Performance Metrics"
+                                data={performanceData}
+                                type="metric"
+                                showTrends={true}
+                                showBenchmarks={true}
+                              />
+                              
+                              <InteractiveHeatmap
+                                title="Performance Heatmap"
+                                data={heatmapData}
+                                colorScheme="blue"
+                                showLabels={false}
+                              />
+                            </div>
 
                             {/* Team Information */}
                             {founders.length > 0 && (
                               <GlowingCard glowColor="blue" intensity="medium">
-                                <div className="bg-white rounded-lg p-6">
-                                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                    <Users className="w-5 h-5 text-blue-600 mr-2" />
-                                    Founding Team
-                                    <Badge variant="info" className="ml-2">
-                                      <Award className="w-3 h-3 mr-1" />
-                                      {founders.length} Founder{founders.length !== 1 ? 's' : ''}
-                                    </Badge>
-                                  </h3>
-                                  <div className="space-y-4">
-                                    {founders.map((founder, index) => (
-                                      <motion.div 
-                                        key={index}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                      >
-                                        <InsightTooltip
-                                          title={founder.full_name || 'Unknown Founder'}
-                                          description={`${founder.domain_experience_yrs || 0} years experience`}
-                                          insight={founder.notable_achievements || 'Experienced founder with domain expertise'}
-                                          benchmark={founder.founder_fit_score ? {
-                                            value: founder.founder_fit_score * 10,
-                                            label: `${founder.founder_fit_score.toFixed(1)}/10 Fit Score`,
-                                            status: founder.founder_fit_score >= 8 ? 'excellent' : 
-                                                   founder.founder_fit_score >= 6 ? 'good' : 'average'
-                                          } : undefined}
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                      <Users className="w-5 h-5 text-blue-600 mr-2" />
+                                      Founding Team
+                                      <Badge variant="info" className="ml-2">
+                                        <Award className="w-3 h-3 mr-1" />
+                                        {founders.length} Founder{founders.length !== 1 ? 's' : ''}
+                                      </Badge>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      {founders.map((founder, index) => (
+                                        <motion.div 
+                                          key={index}
+                                          initial={{ opacity: 0, x: -20 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: index * 0.1 }}
                                         >
-                                          <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-help">
-                                            <div className="flex items-start justify-between mb-2">
-                                              <h4 className="font-medium text-gray-900">{founder.full_name || 'Unknown'}</h4>
-                                              {founder.founder_fit_score !== null && founder.founder_fit_score !== undefined && (
-                                                <span className={`text-sm font-medium ${getScoreColor(founder.founder_fit_score)}`}>
-                                                  <AnimatedCounter value={founder.founder_fit_score} decimals={1} duration={1.5} />
-                                                  /10
-                                                </span>
-                                              )}
-                                            </div>
-                                            {founder.domain_experience_yrs && (
-                                              <p className="text-sm text-gray-600 mb-2">
-                                                <AnimatedCounter value={founder.domain_experience_yrs} duration={1.2} /> years domain experience
-                                              </p>
-                                            )}
-                                            {founder.notable_achievements && (
-                                              <p className="text-sm text-gray-700 mb-2">{founder.notable_achievements}</p>
-                                            )}
-                                            {founder.technical_skills && founder.technical_skills.length > 0 && (
-                                              <div className="flex flex-wrap gap-1">
-                                                {founder.technical_skills.slice(0, 3).map((skill, skillIndex) => (
-                                                  <span key={skillIndex} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                                                    {skill}
-                                                  </span>
-                                                ))}
-                                                {founder.technical_skills.length > 3 && (
-                                                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                                    +{founder.technical_skills.length - 3} more
-                                                  </span>
+                                          <InsightTooltip
+                                            title={founder.full_name || 'Unknown Founder'}
+                                            description={`${founder.domain_experience_yrs || 0} years experience`}
+                                            insight={founder.notable_achievements || 'Experienced founder with domain expertise'}
+                                            benchmark={founder.founder_fit_score ? {
+                                              value: founder.founder_fit_score * 10,
+                                              label: `${founder.founder_fit_score.toFixed(1)}/10 Fit Score`,
+                                              status: founder.founder_fit_score >= 8 ? 'excellent' : 
+                                                     founder.founder_fit_score >= 6 ? 'good' : 'average'
+                                            } : undefined}
+                                          >
+                                            <Card className="hover:shadow-md transition-all duration-200 cursor-help">
+                                              <CardContent className="p-4">
+                                                <div className="flex items-start justify-between mb-2">
+                                                  <h4 className="font-medium text-gray-900">{founder.full_name || 'Unknown'}</h4>
+                                                  {founder.founder_fit_score !== null && founder.founder_fit_score !== undefined && (
+                                                    <span className={`text-sm font-medium ${getScoreColor(founder.founder_fit_score)}`}>
+                                                      <AnimatedCounter value={founder.founder_fit_score} decimals={1} duration={1.5} />
+                                                      /10
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {founder.domain_experience_yrs && (
+                                                  <p className="text-sm text-gray-600 mb-2">
+                                                    <AnimatedCounter value={founder.domain_experience_yrs} duration={1.2} /> years domain experience
+                                                  </p>
                                                 )}
-                                              </div>
-                                            )}
-                                          </div>
-                                        </InsightTooltip>
-                                      </motion.div>
-                                    ))}
-                                  </div>
-                                </div>
+                                                {founder.notable_achievements && (
+                                                  <p className="text-sm text-gray-700 mb-2">{founder.notable_achievements}</p>
+                                                )}
+                                                {founder.technical_skills && founder.technical_skills.length > 0 && (
+                                                  <div className="flex flex-wrap gap-1">
+                                                    {founder.technical_skills.slice(0, 3).map((skill, skillIndex) => (
+                                                      <span key={skillIndex} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                                        {skill}
+                                                      </span>
+                                                    ))}
+                                                    {founder.technical_skills.length > 3 && (
+                                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                                        +{founder.technical_skills.length - 3} more
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </CardContent>
+                                            </Card>
+                                          </InsightTooltip>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
                               </GlowingCard>
                             )}
                           </div>
@@ -618,306 +702,357 @@ const CompanyDetailPage = () => {
                         </TabsContent>
 
                         <TabsContent value="financial" className="mt-0">
-                          <GlowingCard glowColor="emerald" intensity="medium">
-                            <div className="bg-white rounded-lg p-6">
-                              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                <DollarSign className="w-5 h-5 text-emerald-600 mr-2" />
-                                Financial Model Analysis
-                                <Badge variant="success" className="ml-2">
-                                  <Sparkles className="w-3 h-3 mr-1" />
-                                  AI-Analyzed
-                                </Badge>
-                              </h3>
-                              {financialModel ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                  <InsightTooltip
-                                    title="Monthly Revenue"
-                                    description="Current monthly recurring revenue"
-                                    insight="Strong MRR indicates product-market fit and scalable business model"
-                                  >
-                                    <div className="bg-emerald-50 rounded-lg p-4 cursor-help hover:bg-emerald-100 transition-colors">
-                                      <div className="text-2xl font-bold text-emerald-600">
-                                        {formatCurrency(financialModel.monthly_revenue_usd)}
-                                      </div>
-                                      <div className="text-sm text-emerald-700">Monthly Revenue</div>
+                          <div className="space-y-8">
+                            <GlowingCard glowColor="emerald" intensity="medium">
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center">
+                                    <DollarSign className="w-5 h-5 text-emerald-600 mr-2" />
+                                    Financial Model Analysis
+                                    <Badge variant="success" className="ml-2">
+                                      <Sparkles className="w-3 h-3 mr-1" />
+                                      AI-Analyzed
+                                    </Badge>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {financialModel ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                      <InsightTooltip
+                                        title="Monthly Revenue"
+                                        description="Current monthly recurring revenue"
+                                        insight="Strong MRR indicates product-market fit and scalable business model"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-emerald-50">
+                                            <div className="text-2xl font-bold text-emerald-600 mb-2">
+                                              {formatCurrency(financialModel.monthly_revenue_usd)}
+                                            </div>
+                                            <div className="text-sm text-emerald-700">Monthly Revenue</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="Burn Rate"
+                                        description="Monthly cash burn rate"
+                                        insight="Burn rate determines runway and funding needs"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-red-50">
+                                            <div className="text-2xl font-bold text-red-600 mb-2">
+                                              {formatCurrency(financialModel.burn_rate_usd)}
+                                            </div>
+                                            <div className="text-sm text-red-700">Monthly Burn Rate</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="LTV/CAC Ratio"
+                                        description="Customer lifetime value to acquisition cost ratio"
+                                        insight="Ratio >3:1 indicates healthy unit economics"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-blue-50">
+                                            <div className="text-2xl font-bold text-blue-600 mb-2">
+                                              {financialModel.ltv_cac_ratio !== null && financialModel.ltv_cac_ratio !== undefined 
+                                                ? <><AnimatedCounter value={financialModel.ltv_cac_ratio} decimals={1} duration={1.5} />:1</>
+                                                : 'N/A'}
+                                            </div>
+                                            <div className="text-sm text-blue-700">LTV/CAC Ratio</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="Runway"
+                                        description="Months of cash remaining at current burn rate"
+                                        insight="18+ months runway is ideal for fundraising"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-purple-50">
+                                            <div className="text-2xl font-bold text-purple-600 mb-2">
+                                              {financialModel.runway_months !== null && financialModel.runway_months !== undefined 
+                                                ? <><AnimatedCounter value={financialModel.runway_months} decimals={0} duration={1.8} /> months</>
+                                                : 'N/A'}
+                                            </div>
+                                            <div className="text-sm text-purple-700">Runway</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
                                     </div>
-                                  </InsightTooltip>
-                                  
-                                  <InsightTooltip
-                                    title="Burn Rate"
-                                    description="Monthly cash burn rate"
-                                    insight="Burn rate determines runway and funding needs"
-                                  >
-                                    <div className="bg-red-50 rounded-lg p-4 cursor-help hover:bg-red-100 transition-colors">
-                                      <div className="text-2xl font-bold text-red-600">
-                                        {formatCurrency(financialModel.burn_rate_usd)}
-                                      </div>
-                                      <div className="text-sm text-red-700">Monthly Burn Rate</div>
+                                  ) : (
+                                    <div className="text-center py-8">
+                                      <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                      <p className="text-gray-600">No financial model data available</p>
+                                      <p className="text-sm text-gray-500 mt-2">Upload financial documents to see detailed analysis</p>
                                     </div>
-                                  </InsightTooltip>
-                                  
-                                  <InsightTooltip
-                                    title="LTV/CAC Ratio"
-                                    description="Customer lifetime value to acquisition cost ratio"
-                                    insight="Ratio >3:1 indicates healthy unit economics"
-                                  >
-                                    <div className="bg-blue-50 rounded-lg p-4 cursor-help hover:bg-blue-100 transition-colors">
-                                      <div className="text-2xl font-bold text-blue-600">
-                                        {financialModel.ltv_cac_ratio !== null && financialModel.ltv_cac_ratio !== undefined 
-                                          ? <><AnimatedCounter value={financialModel.ltv_cac_ratio} decimals={1} duration={1.5} />:1</>
-                                          : 'N/A'}
-                                      </div>
-                                      <div className="text-sm text-blue-700">LTV/CAC Ratio</div>
-                                    </div>
-                                  </InsightTooltip>
-                                  
-                                  <InsightTooltip
-                                    title="Runway"
-                                    description="Months of cash remaining at current burn rate"
-                                    insight="18+ months runway is ideal for fundraising"
-                                  >
-                                    <div className="bg-purple-50 rounded-lg p-4 cursor-help hover:bg-purple-100 transition-colors">
-                                      <div className="text-2xl font-bold text-purple-600">
-                                        {financialModel.runway_months !== null && financialModel.runway_months !== undefined 
-                                          ? <><AnimatedCounter value={financialModel.runway_months} decimals={0} duration={1.8} /> months</>
-                                          : 'N/A'}
-                                      </div>
-                                      <div className="text-sm text-purple-700">Runway</div>
-                                    </div>
-                                  </InsightTooltip>
-                                </div>
-                              ) : (
-                                <div className="text-center py-8">
-                                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                  <p className="text-gray-600">No financial model data available</p>
-                                  <p className="text-sm text-gray-500 mt-2">Upload financial documents to see detailed analysis</p>
-                                </div>
-                              )}
-                            </div>
-                          </GlowingCard>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </GlowingCard>
+
+                            {/* Metric Comparison */}
+                            <MetricComparison
+                              title="Financial Performance vs Benchmarks"
+                              metrics={comparisonMetrics}
+                              timeframe="vs Last Month"
+                              showBenchmarks={true}
+                              showTargets={true}
+                            />
+                          </div>
                         </TabsContent>
 
                         <TabsContent value="pitch" className="mt-0">
                           <GlowingCard glowColor="purple" intensity="medium">
-                            <div className="bg-white rounded-lg p-6">
-                              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                <FileText className="w-5 h-5 text-purple-600 mr-2" />
-                                Pitch Deck Analysis
-                                {pitchDeck?.deck_quality_score && (
-                                  <Badge variant="info" className="ml-2">
-                                    <Star className="w-3 h-3 mr-1" />
-                                    {pitchDeck.deck_quality_score.toFixed(1)}/10
-                                  </Badge>
-                                )}
-                              </h3>
-                              {pitchDeck ? (
-                                <div className="space-y-6">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <InsightTooltip
-                                      title="Core Problem"
-                                      description="The main problem being solved"
-                                      insight="Clear problem definition is crucial for investor understanding"
-                                    >
-                                      <div className="bg-red-50 rounded-lg p-4 cursor-help">
-                                        <h4 className="font-medium text-red-900 mb-2">Core Problem</h4>
-                                        <p className="text-red-800">{pitchDeck.core_problem || 'Not specified'}</p>
-                                      </div>
-                                    </InsightTooltip>
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center">
+                                  <FileText className="w-5 h-5 text-purple-600 mr-2" />
+                                  Pitch Deck Analysis
+                                  {pitchDeck?.deck_quality_score && (
+                                    <Badge variant="info" className="ml-2">
+                                      <Star className="w-3 h-3 mr-1" />
+                                      {pitchDeck.deck_quality_score.toFixed(1)}/10
+                                    </Badge>
+                                  )}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {pitchDeck ? (
+                                  <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <InsightTooltip
+                                        title="Core Problem"
+                                        description="The main problem being solved"
+                                        insight="Clear problem definition is crucial for investor understanding"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-4 bg-red-50">
+                                            <h4 className="font-medium text-red-900 mb-2">Core Problem</h4>
+                                            <p className="text-red-800">{pitchDeck.core_problem || 'Not specified'}</p>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="Core Solution"
+                                        description="The proposed solution"
+                                        insight="Solution should directly address the identified problem"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-4 bg-emerald-50">
+                                            <h4 className="font-medium text-emerald-900 mb-2">Core Solution</h4>
+                                            <p className="text-emerald-800">{pitchDeck.core_solution || 'Not specified'}</p>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                    </div>
                                     
                                     <InsightTooltip
-                                      title="Core Solution"
-                                      description="The proposed solution"
-                                      insight="Solution should directly address the identified problem"
+                                      title="Target Customer"
+                                      description="Primary customer segment"
+                                      insight="Well-defined customer segment indicates market focus"
                                     >
-                                      <div className="bg-emerald-50 rounded-lg p-4 cursor-help">
-                                        <h4 className="font-medium text-emerald-900 mb-2">Core Solution</h4>
-                                        <p className="text-emerald-800">{pitchDeck.core_solution || 'Not specified'}</p>
-                                      </div>
+                                      <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                        <CardContent className="p-4 bg-blue-50">
+                                          <h4 className="font-medium text-blue-900 mb-2">Target Customer Segment</h4>
+                                          <p className="text-blue-800">{pitchDeck.customer_segment || 'Not specified'}</p>
+                                        </CardContent>
+                                      </Card>
                                     </InsightTooltip>
+                                    
+                                    {pitchDeck.product_summary_md && (
+                                      <Card>
+                                        <CardContent className="p-4 bg-gray-50">
+                                          <h4 className="font-medium text-gray-900 mb-2">Product Summary</h4>
+                                          <div className="prose prose-sm max-w-none text-gray-700">
+                                            <pre className="whitespace-pre-wrap">{pitchDeck.product_summary_md}</pre>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
                                   </div>
-                                  
-                                  <InsightTooltip
-                                    title="Target Customer"
-                                    description="Primary customer segment"
-                                    insight="Well-defined customer segment indicates market focus"
-                                  >
-                                    <div className="bg-blue-50 rounded-lg p-4 cursor-help">
-                                      <h4 className="font-medium text-blue-900 mb-2">Target Customer Segment</h4>
-                                      <p className="text-blue-800">{pitchDeck.customer_segment || 'Not specified'}</p>
-                                    </div>
-                                  </InsightTooltip>
-                                  
-                                  {pitchDeck.product_summary_md && (
-                                    <div className="bg-gray-50 rounded-lg p-4">
-                                      <h4 className="font-medium text-gray-900 mb-2">Product Summary</h4>
-                                      <div className="prose prose-sm max-w-none text-gray-700">
-                                        <pre className="whitespace-pre-wrap">{pitchDeck.product_summary_md}</pre>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="text-center py-8">
-                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                  <p className="text-gray-600">No pitch deck data available</p>
-                                  <p className="text-sm text-gray-500 mt-2">Upload your pitch deck to see detailed analysis</p>
-                                </div>
-                              )}
-                            </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600">No pitch deck data available</p>
+                                    <p className="text-sm text-gray-500 mt-2">Upload your pitch deck to see detailed analysis</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                           </GlowingCard>
                         </TabsContent>
 
                         <TabsContent value="market" className="mt-0">
                           <GlowingCard glowColor="orange" intensity="medium">
-                            <div className="bg-white rounded-lg p-6">
-                              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                <Globe className="w-5 h-5 text-orange-600 mr-2" />
-                                Market Size Analysis
-                                <Badge variant="warning" className="ml-2">
-                                  <Target className="w-3 h-3 mr-1" />
-                                  TAM/SAM/SOM
-                                </Badge>
-                              </h3>
-                              {financialModel?.tam_sam_som_json ? (
-                                <div className="space-y-6">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <InsightTooltip
-                                      title="Total Addressable Market"
-                                      description="The total market demand for the product"
-                                      insight="TAM represents the maximum revenue opportunity"
-                                    >
-                                      <div className="bg-blue-50 rounded-lg p-6 text-center cursor-help hover:bg-blue-100 transition-colors">
-                                        <div className="text-3xl font-bold text-blue-600 mb-2">
-                                          {formatCurrency(financialModel.tam_sam_som_json.tam)}
-                                        </div>
-                                        <div className="text-sm text-blue-700 font-medium">Total Addressable Market</div>
-                                      </div>
-                                    </InsightTooltip>
-                                    
-                                    <InsightTooltip
-                                      title="Serviceable Addressable Market"
-                                      description="The portion of TAM that can be served"
-                                      insight="SAM represents the realistic market opportunity"
-                                    >
-                                      <div className="bg-purple-50 rounded-lg p-6 text-center cursor-help hover:bg-purple-100 transition-colors">
-                                        <div className="text-3xl font-bold text-purple-600 mb-2">
-                                          {formatCurrency(financialModel.tam_sam_som_json.sam)}
-                                        </div>
-                                        <div className="text-sm text-purple-700 font-medium">Serviceable Addressable Market</div>
-                                      </div>
-                                    </InsightTooltip>
-                                    
-                                    <InsightTooltip
-                                      title="Serviceable Obtainable Market"
-                                      description="The portion of SAM that can realistically be captured"
-                                      insight="SOM represents the near-term market opportunity"
-                                    >
-                                      <div className="bg-emerald-50 rounded-lg p-6 text-center cursor-help hover:bg-emerald-100 transition-colors">
-                                        <div className="text-3xl font-bold text-emerald-600 mb-2">
-                                          {formatCurrency(financialModel.tam_sam_som_json.som)}
-                                        </div>
-                                        <div className="text-sm text-emerald-700 font-medium">Serviceable Obtainable Market</div>
-                                      </div>
-                                    </InsightTooltip>
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center">
+                                  <Globe className="w-5 h-5 text-orange-600 mr-2" />
+                                  Market Size Analysis
+                                  <Badge variant="warning" className="ml-2">
+                                    <Target className="w-3 h-3 mr-1" />
+                                    TAM/SAM/SOM
+                                  </Badge>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {financialModel?.tam_sam_som_json ? (
+                                  <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                      <InsightTooltip
+                                        title="Total Addressable Market"
+                                        description="The total market demand for the product"
+                                        insight="TAM represents the maximum revenue opportunity"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-blue-50">
+                                            <div className="text-3xl font-bold text-blue-600 mb-2">
+                                              {formatCurrency(financialModel.tam_sam_som_json.tam)}
+                                            </div>
+                                            <div className="text-sm text-blue-700 font-medium">Total Addressable Market</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="Serviceable Addressable Market"
+                                        description="The portion of TAM that can be served"
+                                        insight="SAM represents the realistic market opportunity"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-purple-50">
+                                            <div className="text-3xl font-bold text-purple-600 mb-2">
+                                              {formatCurrency(financialModel.tam_sam_som_json.sam)}
+                                            </div>
+                                            <div className="text-sm text-purple-700 font-medium">Serviceable Addressable Market</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                      
+                                      <InsightTooltip
+                                        title="Serviceable Obtainable Market"
+                                        description="The portion of SAM that can realistically be captured"
+                                        insight="SOM represents the near-term market opportunity"
+                                      >
+                                        <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                          <CardContent className="p-6 text-center bg-emerald-50">
+                                            <div className="text-3xl font-bold text-emerald-600 mb-2">
+                                              {formatCurrency(financialModel.tam_sam_som_json.som)}
+                                            </div>
+                                            <div className="text-sm text-emerald-700 font-medium">Serviceable Obtainable Market</div>
+                                          </CardContent>
+                                        </Card>
+                                      </InsightTooltip>
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <div className="text-center py-8">
-                                  <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                  <p className="text-gray-600">No market size data available</p>
-                                  <p className="text-sm text-gray-500 mt-2">Upload market research to see TAM/SAM/SOM analysis</p>
-                                </div>
-                              )}
-                            </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600">No market size data available</p>
+                                    <p className="text-sm text-gray-500 mt-2">Upload market research to see TAM/SAM/SOM analysis</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                           </GlowingCard>
                         </TabsContent>
 
                         <TabsContent value="vc-matching" className="mt-0">
                           <GlowingCard glowColor="pink" intensity="medium">
-                            <div className="bg-white rounded-lg p-6">
-                              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                                <Users className="w-5 h-5 text-pink-600 mr-2" />
-                                VC Matching Analysis
-                                {vcFitReport?.funding_probability && (
-                                  <Badge variant="info" className="ml-2">
-                                    <TrendingUp className="w-3 h-3 mr-1" />
-                                    {(vcFitReport.funding_probability * 100).toFixed(0)}% Probability
-                                  </Badge>
-                                )}
-                              </h3>
-                              {vcFitReport ? (
-                                <div className="space-y-6">
-                                  {vcFitReport.matched_vcs_json?.matches && (
-                                    <div>
-                                      <h4 className="font-medium text-gray-900 mb-4">Matched VCs</h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {vcFitReport.matched_vcs_json.matches.map((vc: any, index: number) => (
-                                          <motion.div 
-                                            key={index}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                          >
-                                            <InsightTooltip
-                                              title={vc.name}
-                                              description={vc.focus}
-                                              insight={`${vc.fit_score}% match based on industry, stage, and investment criteria`}
-                                              benchmark={{
-                                                value: vc.fit_score,
-                                                label: `${vc.fit_score}% Match`,
-                                                status: vc.fit_score >= 80 ? 'excellent' : vc.fit_score >= 60 ? 'good' : 'average'
-                                              }}
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center">
+                                  <Users className="w-5 h-5 text-pink-600 mr-2" />
+                                  VC Matching Analysis
+                                  {vcFitReport?.funding_probability && (
+                                    <Badge variant="info" className="ml-2">
+                                      <TrendingUp className="w-3 h-3 mr-1" />
+                                      {(vcFitReport.funding_probability * 100).toFixed(0)}% Probability
+                                    </Badge>
+                                  )}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {vcFitReport ? (
+                                  <div className="space-y-6">
+                                    {vcFitReport.matched_vcs_json?.matches && (
+                                      <div>
+                                        <h4 className="font-medium text-gray-900 mb-4">Matched VCs</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                          {vcFitReport.matched_vcs_json.matches.map((vc: any, index: number) => (
+                                            <motion.div 
+                                              key={index}
+                                              initial={{ opacity: 0, y: 20 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ delay: index * 0.1 }}
                                             >
-                                              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-help">
-                                                <div className="flex items-center justify-between mb-2">
-                                                  <h5 className="font-medium text-gray-900">{vc.name}</h5>
-                                                  <span className="text-sm font-medium text-blue-600">
-                                                    <AnimatedCounter value={vc.fit_score} duration={1.5} />% match
-                                                  </span>
-                                                </div>
-                                                <p className="text-sm text-gray-600">{vc.focus}</p>
-                                              </div>
-                                            </InsightTooltip>
-                                          </motion.div>
-                                        ))}
+                                              <InsightTooltip
+                                                title={vc.name}
+                                                description={vc.focus}
+                                                insight={`${vc.fit_score}% match based on industry, stage, and investment criteria`}
+                                                benchmark={{
+                                                  value: vc.fit_score,
+                                                  label: `${vc.fit_score}% Match`,
+                                                  status: vc.fit_score >= 80 ? 'excellent' : vc.fit_score >= 60 ? 'good' : 'average'
+                                                }}
+                                              >
+                                                <Card className="cursor-help hover:shadow-md transition-all duration-200">
+                                                  <CardContent className="p-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <h5 className="font-medium text-gray-900">{vc.name}</h5>
+                                                      <span className="text-sm font-medium text-blue-600">
+                                                        <AnimatedCounter value={vc.fit_score} duration={1.5} />% match
+                                                      </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">{vc.focus}</p>
+                                                  </CardContent>
+                                                </Card>
+                                              </InsightTooltip>
+                                            </motion.div>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-                                  
-                                  {vcFitReport.requirements_to_improve && vcFitReport.requirements_to_improve.length > 0 && (
-                                    <div>
-                                      <h4 className="font-medium text-gray-900 mb-4">Areas for Improvement</h4>
-                                      <ul className="space-y-2">
-                                        {vcFitReport.requirements_to_improve.map((requirement, index) => (
-                                          <motion.li 
-                                            key={index}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                            className="flex items-start"
-                                          >
-                                            <Target className="w-4 h-4 text-orange-500 mr-2 mt-0.5" />
-                                            <span className="text-sm text-gray-700">{requirement}</span>
-                                          </motion.li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="text-center py-8">
-                                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                  <p className="text-gray-600">No VC matching data available</p>
-                                  <p className="text-sm text-gray-500 mt-2">Complete your profile to get matched with relevant investors</p>
-                                </div>
-                              )}
-                            </div>
+                                    )}
+                                    
+                                    {vcFitReport.requirements_to_improve && vcFitReport.requirements_to_improve.length > 0 && (
+                                      <div>
+                                        <h4 className="font-medium text-gray-900 mb-4">Areas for Improvement</h4>
+                                        <ul className="space-y-2">
+                                          {vcFitReport.requirements_to_improve.map((requirement, index) => (
+                                            <motion.li 
+                                              key={index}
+                                              initial={{ opacity: 0, x: -20 }}
+                                              animate={{ opacity: 1, x: 0 }}
+                                              transition={{ delay: index * 0.1 }}
+                                              className="flex items-start"
+                                            >
+                                              <Target className="w-4 h-4 text-orange-500 mr-2 mt-0.5" />
+                                              <span className="text-sm text-gray-700">{requirement}</span>
+                                            </motion.li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600">No VC matching data available</p>
+                                    <p className="text-sm text-gray-500 mt-2">Complete your profile to get matched with relevant investors</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                           </GlowingCard>
                         </TabsContent>
                       </motion.div>
                     </AnimatePresence>
                   </div>
-                </div>
+                </Card>
               </Tabs>
             </GlowingCard>
           </motion.div>
