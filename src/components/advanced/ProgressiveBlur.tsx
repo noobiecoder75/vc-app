@@ -34,9 +34,7 @@ const ProgressiveBlur: React.FC<ProgressiveBlurProps> = ({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className={cn(
-          "absolute inset-0 pointer-events-none"
-        )}
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: `linear-gradient(${getGradientDirection()}, transparent 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.8) 100%)`,
           backdropFilter: `blur(${intensity}px)`,
