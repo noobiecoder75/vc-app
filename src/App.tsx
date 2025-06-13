@@ -8,6 +8,7 @@ import UploadPage from './pages/upload';
 import DashboardPage from './pages/dashboard';
 import CompaniesPage from './pages/companies';
 import CompanyDetailPage from './pages/company-detail';
+import PricingPage from './pages/pricing';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/companies" element={<CompaniesPage />} />
               <Route path="/company/:id" element={<CompanyDetailPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
             </Routes>
           </main>
           <Toaster position="top-right" />

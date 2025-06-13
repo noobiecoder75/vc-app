@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import InsightTooltip from './InsightTooltip';
-import { Upload, TrendingUp, Building2, BarChart3, Sparkles, Zap } from 'lucide-react';
+import { Upload, TrendingUp, Building2, BarChart3, Sparkles, Zap, DollarSign } from 'lucide-react';
 
 const NavBar = () => {
   const location = useLocation();
@@ -30,6 +30,13 @@ const NavBar = () => {
       icon: Building2,
       insight: 'Browse and analyze startup portfolios with detailed insights',
       description: 'Startup portfolio management'
+    },
+    {
+      path: '/pricing',
+      label: 'Pricing',
+      icon: DollarSign,
+      insight: 'Choose the perfect plan for your startup journey',
+      description: 'Simple, transparent pricing'
     }
   ];
 

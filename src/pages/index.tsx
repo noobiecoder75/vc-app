@@ -469,9 +469,9 @@ const HomePage = () => {
                   </InsightTooltip>
                   
                   <InsightTooltip
-                    title="Explore Platform"
-                    description="See all features and capabilities"
-                    insight="Understanding the full platform helps you plan better"
+                    title="View Pricing"
+                    description="See all plans and features"
+                    insight="Understanding pricing helps you plan your startup budget"
                   >
                     <Button 
                       variant="outline"
@@ -479,9 +479,9 @@ const HomePage = () => {
                       className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 hover-glow"
                       asChild
                     >
-                      <Link to="/dashboard">
+                      <Link to="/pricing">
                         <Globe className="w-5 h-5 mr-2" />
-                        Explore Platform
+                        View Pricing
                       </Link>
                     </Button>
                   </InsightTooltip>
@@ -531,7 +531,7 @@ const HomePage = () => {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors">API</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
               </ul>
