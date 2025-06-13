@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import EnhancedKPIChart from '../components/enhanced/EnhancedKPIChart';
+import ComprehensiveKPIDashboard from '../components/enhanced/ComprehensiveKPIDashboard';
 import VCMatchCard from '../components/VCMatchCard';
 import InsightTooltip from '../components/InsightTooltip';
 import AnimatedCounter from '../components/advanced/AnimatedCounter';
@@ -36,7 +36,12 @@ import {
   Download,
   Sparkles,
   Activity,
-  Globe
+  Globe,
+  Building2,
+  PieChart,
+  LineChart,
+  Calendar,
+  Filter
 } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -145,63 +150,6 @@ const DashboardPage = () => {
       label: 'Export Data',
       onClick: () => console.log('Export clicked'),
       color: 'bg-orange-600 hover:bg-orange-700'
-    }
-  ];
-
-  // Sample data for advanced visualizations
-  const performanceData = [
-    { name: 'Revenue', value: 125000, change: 15.2, trend: 'up' as const, color: '#10B981' },
-    { name: 'Users', value: 2850, change: 8.2, trend: 'up' as const, color: '#3B82F6' },
-    { name: 'Conversion', value: 3.4, change: -2.1, trend: 'down' as const, color: '#F59E0B' },
-    { name: 'Retention', value: 89.5, change: 5.7, trend: 'up' as const, color: '#8B5CF6' },
-    { name: 'CAC', value: 45, change: -8.3, trend: 'down' as const, color: '#EF4444' },
-    { name: 'LTV', value: 1250, change: 12.4, trend: 'up' as const, color: '#EC4899' }
-  ];
-
-  const heatmapData = Array.from({ length: 50 }, (_, i) => ({
-    x: i % 10,
-    y: Math.floor(i / 10),
-    value: Math.floor(Math.random() * 100) + 1,
-    label: `Cell ${i + 1}`,
-    category: ['Revenue', 'Users', 'Growth', 'Retention'][Math.floor(Math.random() * 4)]
-  }));
-
-  const comparisonMetrics = [
-    {
-      name: 'Monthly Revenue',
-      current: 125000,
-      previous: 108000,
-      benchmark: 100000,
-      target: 150000,
-      unit: 'USD',
-      category: 'Financial'
-    },
-    {
-      name: 'User Growth Rate',
-      current: 15.2,
-      previous: 12.8,
-      benchmark: 10.0,
-      target: 20.0,
-      unit: '%',
-      category: 'Growth'
-    },
-    {
-      name: 'Customer Satisfaction',
-      current: 4.7,
-      previous: 4.5,
-      benchmark: 4.0,
-      target: 4.8,
-      unit: '/5',
-      category: 'Quality'
-    },
-    {
-      name: 'Churn Rate',
-      current: 2.1,
-      previous: 2.8,
-      benchmark: 5.0,
-      target: 2.0,
-      unit: '%',
-      category: 'Retention'
     }
   ];
 
@@ -354,52 +302,7 @@ const DashboardPage = () => {
           ))}
         </motion.div>
 
-        {/* Enhanced Main Content Grid */}
-        <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          {/* Enhanced KPI Charts - Takes 2 columns */}
-          <motion.div className="lg:col-span-2" variants={itemVariants}>
-            <EnhancedKPIChart />
-          </motion.div>
-          
-          {/* VC Matching - Takes 1 column */}
-          <motion.div variants={itemVariants}>
-            <VCMatchCard />
-          </motion.div>
-        </motion.div>
-
-        {/* Advanced Data Visualizations */}
-        <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <motion.div variants={itemVariants}>
-            <DataVisualization
-              title="Performance Metrics"
-              data={performanceData}
-              type="metric"
-              showTrends={true}
-              showBenchmarks={true}
-            />
-          </motion.div>
-          
-          <motion.div variants={itemVariants}>
-            <InteractiveHeatmap
-              title="Activity Heatmap"
-              data={heatmapData}
-              colorScheme="blue"
-              showLabels={false}
-            />
-          </motion.div>
-        </motion.div>
-
-        {/* Metric Comparison */}
+        {/* Main Dashboard Tabs */}
         <motion.div 
           className="mb-8"
           initial="hidden"
@@ -407,167 +310,238 @@ const DashboardPage = () => {
           variants={containerVariants}
         >
           <motion.div variants={itemVariants}>
-            <MetricComparison
-              title="Performance vs Benchmarks"
-              metrics={comparisonMetrics}
-              timeframe="vs Last Month"
-              showBenchmarks={true}
-              showTargets={true}
-            />
-          </motion.div>
-        </motion.div>
-
-        {/* Enhanced Premium Features */}
-        <motion.div 
-          className="mb-8"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <motion.div variants={itemVariants}>
-            <GlowingCard glowColor="purple" intensity="high">
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 rounded-xl p-8 text-white relative overflow-hidden">
-                <ParticleBackground particleCount={15} color="#FFFFFF" speed={0.2} />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-600/20 animate-pulse" />
-                <div className="relative z-10">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6">
-                    <div className="mb-6 lg:mb-0">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Rocket className="w-8 h-8" />
-                        <h2 className="text-3xl font-bold">Unlock Premium Features</h2>
-                        <Badge variant="outline" className="text-white border-white">
-                          <Zap className="w-3 h-3 mr-1" />
-                          Pro
-                        </Badge>
-                      </div>
-                      <p className="opacity-90 text-lg">
-                        Get access to advanced tools that successful startups use to raise capital
-                      </p>
-                    </div>
-                    
-                    <div className="text-center lg:text-right">
-                      <MorphingButton
-                        variant="default"
-                        className="bg-white text-blue-600 hover:bg-gray-50 font-semibold px-8 py-3 text-lg"
-                        successText="Welcome to Pro!"
-                        onClick={async () => {
-                          await new Promise(resolve => setTimeout(resolve, 2000));
-                        }}
-                      >
-                        <Award className="w-5 h-5 mr-2" />
-                        Upgrade to Pro
-                      </MorphingButton>
-                      <p className="text-sm opacity-75 mt-2">Starting at $29/month</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {premiumFeatures.map((feature, index) => (
-                      <motion.div 
-                        key={index}
-                        variants={itemVariants}
-                        custom={index}
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <InsightTooltip
-                          title={feature.title}
-                          description={feature.description}
-                          insight={feature.insight}
-                          actionable="Upgrade to Pro to unlock this feature"
-                          type="info"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200 cursor-help border border-white/20">
-                            <div className="flex items-center space-x-3 mb-3">
-                              <feature.icon className="w-6 h-6" />
-                              <span className="font-semibold">{feature.title}</span>
-                            </div>
-                            <p className="text-sm opacity-90">{feature.description}</p>
-                          </div>
-                        </InsightTooltip>
-                      </motion.div>
-                    ))}
-                  </div>
+            <Card className="shadow-lg">
+              <Tabs defaultValue="comprehensive" className="w-full">
+                <div className="border-b border-gray-200 px-6 pt-6">
+                  <TabsList className="grid w-full grid-cols-3 bg-gray-100 h-12">
+                    <TabsTrigger 
+                      value="comprehensive" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Comprehensive KPIs</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="analytics"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
+                    >
+                      <PieChart className="w-4 h-4" />
+                      <span className="hidden sm:inline">Advanced Analytics</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="insights"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
+                    >
+                      <Brain className="w-4 h-4" />
+                      <span className="hidden sm:inline">AI Insights</span>
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
-            </GlowingCard>
-          </motion.div>
-        </motion.div>
 
-        {/* Enhanced AI Insights */}
-        <motion.div 
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <motion.div variants={itemVariants}>
-            <GlowingCard glowColor="emerald" intensity="medium">
-              <Card className="bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-3 text-gray-900">
-                    <Brain className="w-7 h-7 text-emerald-600" />
-                    <span>AI-Powered Insights</span>
-                    <Badge variant="success" className="text-sm">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Enhanced
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InsightTooltip
-                      title="Fundraising Readiness"
-                      description="AI assessment of your fundraising timeline"
-                      insight="Based on your metrics, you're 6-8 months away from optimal fundraising conditions"
-                      actionable="Focus on reaching $200K MRR and improving unit economics"
-                      examples={["Similar startups raised at $150K MRR", "VCs prefer 18+ months runway"]}
+                <div className="p-6">
+                  {/* Comprehensive KPI Dashboard Tab */}
+                  <TabsContent value="comprehensive" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
                     >
-                      <GlowingCard glowColor="blue" intensity="low" className="cursor-help">
-                        <div className="p-6 bg-white rounded-lg border border-emerald-200">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            📈 <span className="ml-2">Fundraising Timeline</span>
-                          </h4>
-                          <p className="text-gray-700 text-sm mb-3">
-                            Based on your current growth trajectory, you'll be ready for Series A in 6-8 months.
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <Badge variant="info" className="text-xs">AI Prediction</Badge>
-                            <span className="text-lg font-bold text-blue-600">
-                              <AnimatedCounter value={6} suffix=" months" duration={1.5} />
-                            </span>
+                      <ComprehensiveKPIDashboard 
+                        companyId="demo-company"
+                        companyName="Your Startup"
+                        industry="SaaS"
+                        stage="Series A"
+                      />
+                    </motion.div>
+                  </TabsContent>
+
+                  {/* Advanced Analytics Tab */}
+                  <TabsContent value="analytics" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-8"
+                    >
+                      <div className="text-center mb-8">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Advanced Analytics Suite</h3>
+                        <p className="text-gray-600">Deep dive into your startup's performance with advanced visualizations</p>
+                      </div>
+
+                      {/* Enhanced Main Content Grid */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Enhanced KPI Charts - Takes 2 columns */}
+                        <div className="lg:col-span-2">
+                          <ComprehensiveKPIDashboard 
+                            companyId="demo-company"
+                            companyName="Your Startup"
+                            industry="SaaS"
+                            stage="Series A"
+                          />
+                        </div>
+                        
+                        {/* VC Matching - Takes 1 column */}
+                        <div>
+                          <VCMatchCard />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </TabsContent>
+
+                  {/* AI Insights Tab */}
+                  <TabsContent value="insights" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-8"
+                    >
+                      <div className="text-center mb-8">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">AI-Powered Insights</h3>
+                        <p className="text-gray-600">Machine learning insights and predictive analytics for your startup</p>
+                      </div>
+
+                      {/* Enhanced AI Insights */}
+                      <GlowingCard glowColor="emerald" intensity="medium">
+                        <Card className="bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
+                          <CardHeader>
+                            <CardTitle className="flex items-center space-x-3 text-gray-900">
+                              <Brain className="w-7 h-7 text-emerald-600" />
+                              <span>AI-Powered Insights</span>
+                              <Badge variant="success" className="text-sm">
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                Enhanced
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <InsightTooltip
+                                title="Fundraising Readiness"
+                                description="AI assessment of your fundraising timeline"
+                                insight="Based on your metrics, you're 6-8 months away from optimal fundraising conditions"
+                                actionable="Focus on reaching $200K MRR and improving unit economics"
+                                examples={["Similar startups raised at $150K MRR", "VCs prefer 18+ months runway"]}
+                              >
+                                <GlowingCard glowColor="blue" intensity="low" className="cursor-help">
+                                  <div className="p-6 bg-white rounded-lg border border-emerald-200">
+                                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                                      📈 <span className="ml-2">Fundraising Timeline</span>
+                                    </h4>
+                                    <p className="text-gray-700 text-sm mb-3">
+                                      Based on your current growth trajectory, you'll be ready for Series A in 6-8 months.
+                                    </p>
+                                    <div className="flex items-center justify-between">
+                                      <Badge variant="info" className="text-xs">AI Prediction</Badge>
+                                      <span className="text-lg font-bold text-blue-600">
+                                        <AnimatedCounter value={6} suffix=" months" duration={1.5} />
+                                      </span>
+                                    </div>
+                                  </div>
+                                </GlowingCard>
+                              </InsightTooltip>
+
+                              <InsightTooltip
+                                title="Market Opportunity"
+                                description="AI analysis of your market positioning"
+                                insight="Your market timing is excellent - 73% of similar startups in your space are raising successfully"
+                                actionable="Leverage the current market momentum in your pitch"
+                                examples={["SaaS market is hot right now", "Enterprise adoption accelerating"]}
+                              >
+                                <GlowingCard glowColor="purple" intensity="low" className="cursor-help">
+                                  <div className="p-6 bg-white rounded-lg border border-blue-200">
+                                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                                      🎯 <span className="ml-2">Market Timing</span>
+                                    </h4>
+                                    <p className="text-gray-700 text-sm mb-3">
+                                      Market conditions are favorable for your sector. 73% success rate for similar startups.
+                                    </p>
+                                    <div className="flex items-center justify-between">
+                                      <Badge variant="success" className="text-xs">Optimal Timing</Badge>
+                                      <span className="text-lg font-bold text-emerald-600">
+                                        <AnimatedCounter value={73} suffix="%" duration={2} />
+                                      </span>
+                                    </div>
+                                  </div>
+                                </GlowingCard>
+                              </InsightTooltip>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+
+                      {/* Enhanced Premium Features */}
+                      <GlowingCard glowColor="purple" intensity="high">
+                        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 rounded-xl p-8 text-white relative overflow-hidden">
+                          <ParticleBackground particleCount={15} color="#FFFFFF" speed={0.2} />
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-600/20 animate-pulse" />
+                          <div className="relative z-10">
+                            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6">
+                              <div className="mb-6 lg:mb-0">
+                                <div className="flex items-center space-x-3 mb-3">
+                                  <Rocket className="w-8 h-8" />
+                                  <h2 className="text-3xl font-bold">Unlock Premium Features</h2>
+                                  <Badge variant="outline" className="text-white border-white">
+                                    <Zap className="w-3 h-3 mr-1" />
+                                    Pro
+                                  </Badge>
+                                </div>
+                                <p className="opacity-90 text-lg">
+                                  Get access to advanced tools that successful startups use to raise capital
+                                </p>
+                              </div>
+                              
+                              <div className="text-center lg:text-right">
+                                <MorphingButton
+                                  variant="default"
+                                  className="bg-white text-blue-600 hover:bg-gray-50 font-semibold px-8 py-3 text-lg"
+                                  successText="Welcome to Pro!"
+                                  onClick={async () => {
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                  }}
+                                >
+                                  <Award className="w-5 h-5 mr-2" />
+                                  Upgrade to Pro
+                                </MorphingButton>
+                                <p className="text-sm opacity-75 mt-2">Starting at $29/month</p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              {premiumFeatures.map((feature, index) => (
+                                <motion.div 
+                                  key={index}
+                                  variants={itemVariants}
+                                  custom={index}
+                                  whileHover={{ scale: 1.05 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <InsightTooltip
+                                    title={feature.title}
+                                    description={feature.description}
+                                    insight={feature.insight}
+                                    actionable="Upgrade to Pro to unlock this feature"
+                                    type="info"
+                                  >
+                                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200 cursor-help border border-white/20">
+                                      <div className="flex items-center space-x-3 mb-3">
+                                        <feature.icon className="w-6 h-6" />
+                                        <span className="font-semibold">{feature.title}</span>
+                                      </div>
+                                      <p className="text-sm opacity-90">{feature.description}</p>
+                                    </div>
+                                  </InsightTooltip>
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </GlowingCard>
-                    </InsightTooltip>
-
-                    <InsightTooltip
-                      title="Market Opportunity"
-                      description="AI analysis of your market positioning"
-                      insight="Your market timing is excellent - 73% of similar startups in your space are raising successfully"
-                      actionable="Leverage the current market momentum in your pitch"
-                      examples={["SaaS market is hot right now", "Enterprise adoption accelerating"]}
-                    >
-                      <GlowingCard glowColor="purple" intensity="low" className="cursor-help">
-                        <div className="p-6 bg-white rounded-lg border border-blue-200">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            🎯 <span className="ml-2">Market Timing</span>
-                          </h4>
-                          <p className="text-gray-700 text-sm mb-3">
-                            Market conditions are favorable for your sector. 73% success rate for similar startups.
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <Badge variant="success" className="text-xs">Optimal Timing</Badge>
-                            <span className="text-lg font-bold text-emerald-600">
-                              <AnimatedCounter value={73} suffix="%" duration={2} />
-                            </span>
-                          </div>
-                        </div>
-                      </GlowingCard>
-                    </InsightTooltip>
-                  </div>
-                </CardContent>
-              </Card>
-            </GlowingCard>
+                    </motion.div>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </Card>
           </motion.div>
         </motion.div>
       </div>
