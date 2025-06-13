@@ -164,6 +164,61 @@ const DashboardPage = () => {
     return value.toLocaleString();
   };
 
+  // Sample data for advanced analytics
+  const sampleMetrics = [
+    { name: 'Monthly Revenue', value: 125000, change: 15.2, trend: 'up' as const, color: '#10B981' },
+    { name: 'Customer Acquisition Cost', value: 285, change: -8.3, trend: 'down' as const, color: '#3B82F6' },
+    { name: 'Customer Lifetime Value', value: 4250, change: 12.7, trend: 'up' as const, color: '#8B5CF6' },
+    { name: 'Monthly Active Users', value: 2850, change: 8.2, trend: 'up' as const, color: '#F59E0B' }
+  ];
+
+  const heatmapData = Array.from({ length: 40 }, (_, i) => ({
+    x: i % 8,
+    y: Math.floor(i / 8),
+    value: Math.floor(Math.random() * 100) + 1,
+    label: `Metric ${i + 1}`,
+    category: ['Financial', 'Growth', 'Operational', 'Sales'][Math.floor(Math.random() * 4)]
+  }));
+
+  const comparisonMetrics = [
+    {
+      name: 'Monthly Recurring Revenue',
+      current: 125000,
+      previous: 108000,
+      benchmark: 100000,
+      target: 150000,
+      unit: 'USD',
+      category: 'Financial'
+    },
+    {
+      name: 'Customer Acquisition Cost',
+      current: 285,
+      previous: 310,
+      benchmark: 400,
+      target: 250,
+      unit: 'USD',
+      category: 'Financial'
+    },
+    {
+      name: 'Net Revenue Retention',
+      current: 118,
+      previous: 112,
+      benchmark: 110,
+      target: 125,
+      unit: '%',
+      category: 'Growth'
+    },
+    {
+      name: 'Monthly Active Users',
+      current: 2850,
+      previous: 2630,
+      benchmark: 2000,
+      target: 5000,
+      unit: 'count',
+      category: 'Operational'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Particle Background */}
@@ -368,19 +423,45 @@ const DashboardPage = () => {
                         <p className="text-gray-600">Deep dive into your startup's performance with advanced visualizations</p>
                       </div>
 
-                      {/* Enhanced Main Content Grid */}
+                      {/* Data Visualizations */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <DataVisualization
+                          title="Key Performance Metrics"
+                          data={sampleMetrics}
+                          type="metric"
+                          showTrends={true}
+                          showBenchmarks={true}
+                        />
+                        
+                        <InteractiveHeatmap
+                          title="Performance Heatmap"
+                          data={heatmapData}
+                          colorScheme="blue"
+                          showLabels={false}
+                        />
+                      </div>
+
+                      {/* Metric Comparison */}
+                      <MetricComparison
+                        title="Performance vs Benchmarks"
+                        metrics={comparisonMetrics}
+                        timeframe="vs Last Month"
+                        showBenchmarks={true}
+                        showTargets={true}
+                      />
+
+                      {/* VC Matching */}
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Enhanced KPI Charts - Takes 2 columns */}
                         <div className="lg:col-span-2">
-                          <ComprehensiveKPIDashboard 
-                            companyId="demo-company"
-                            companyName="Your Startup"
-                            industry="SaaS"
-                            stage="Series A"
+                          <DataVisualization
+                            title="Growth Trends"
+                            data={sampleMetrics}
+                            type="bar"
+                            showTrends={true}
+                            showBenchmarks={true}
                           />
                         </div>
                         
-                        {/* VC Matching - Takes 1 column */}
                         <div>
                           <VCMatchCard />
                         </div>
