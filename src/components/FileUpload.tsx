@@ -5,6 +5,8 @@ import { createWorker } from 'tesseract.js';
 import { analyzeStartupContent, StartupAnalysis } from '../lib/openaiClient';
 import { insertStartupData, DatabaseInsertResult } from '../lib/databaseService';
 import LiveKPIChart from './LiveKPIChart';
+import FeatureGate from './FeatureGate';
+import { useFeatureGateWithUsage } from '../hooks/useFeatureGate';
 
 interface ProcessedContent {
   type: string;
@@ -26,6 +28,9 @@ const FileUpload = () => {
   const [dbResult, setDbResult] = useState<DatabaseInsertResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showKPIChart, setShowKPIChart] = useState(false);
+
+  // Feature gating for validations
+  const validationGate = useFeatureGateWithUsage('validations');
 
   const logError = (operation: string, error: any, context?: any) => {
     const errorDetails = {
@@ -296,6 +301,13 @@ ${rawContent}`;
   };
 
   const handleFiles = async (files: FileList) => {
+    // Check feature gate before proceeding
+    if (!validationGate.allowed) {
+      setUploadStatus('error');
+      setErrorMessage(`You've reached your validation limit. ${validationGate.unlimited ? 'Upgrade to continue.' : `You've used ${validationGate.currentUsage} of ${validationGate.limitValue} validations this month.`}`);
+      return;
+    }
+
     const file = files[0];
     
     console.log(`📥 File upload initiated:`, {
@@ -469,6 +481,10 @@ ${rawContent}`;
       }
 
       console.log(`✅ Database save successful`);
+      
+      // Track feature usage after successful analysis
+      await validationGate.useFeature(1);
+      
       setUploadStatus('success');
       setUploadedFile(file.name);
       
@@ -539,237 +555,244 @@ ${rawContent}`;
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div
-        className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 ${
-          dragActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          accept=".txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
-          onChange={handleInputChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={uploading}
-        />
-        
-        <div className="text-center">
-          {uploading ? (
-            <div>
-              <div className="animate-spin mx-auto w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-              <p className="text-gray-600">{getCurrentStatus()}</p>
-              
-              {/* Progress indicators */}
-              <div className="mt-4 space-y-2">
-                <div className={`flex items-center justify-center space-x-2 text-sm ${processing ? 'text-blue-600' : processedContent ? 'text-green-600' : 'text-gray-400'}`}>
-                  <FileText className="w-4 h-4" />
-                  <span>File Processing</span>
-                  {processedContent && <CheckCircle className="w-4 h-4" />}
-                </div>
+    <FeatureGate
+      featureName="validations"
+      featureDisplayName="Startup Validations"
+      requiredPlan="Professional"
+      showUsage={true}
+    >
+      <div className="max-w-2xl mx-auto">
+        <div
+          className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 ${
+            dragActive
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            accept=".txt,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+            onChange={handleInputChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={uploading}
+          />
+          
+          <div className="text-center">
+            {uploading ? (
+              <div>
+                <div className="animate-spin mx-auto w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+                <p className="text-gray-600">{getCurrentStatus()}</p>
                 
-                <div className={`flex items-center justify-center space-x-2 text-sm ${aiAnalyzing ? 'text-blue-600' : aiAnalysis ? 'text-green-600' : aiError ? 'text-amber-600' : 'text-gray-400'}`}>
-                  <Brain className="w-4 h-4" />
-                  <span>{aiError ? 'Basic Analysis' : 'AI Analysis'}</span>
-                  {aiAnalysis && <CheckCircle className="w-4 h-4" />}
-                  {aiError && <AlertCircle className="w-4 h-4" />}
-                </div>
-                
-                <div className={`flex items-center justify-center space-x-2 text-sm ${savingToDb ? 'text-blue-600' : dbResult ? 'text-green-600' : 'text-gray-400'}`}>
-                  <Database className="w-4 h-4" />
-                  <span>Database Save</span>
-                  {dbResult && <CheckCircle className="w-4 h-4" />}
+                {/* Progress indicators */}
+                <div className="mt-4 space-y-2">
+                  <div className={`flex items-center justify-center space-x-2 text-sm ${processing ? 'text-blue-600' : processedContent ? 'text-green-600' : 'text-gray-400'}`}>
+                    <FileText className="w-4 h-4" />
+                    <span>File Processing</span>
+                    {processedContent && <CheckCircle className="w-4 h-4" />}
+                  </div>
+                  
+                  <div className={`flex items-center justify-center space-x-2 text-sm ${aiAnalyzing ? 'text-blue-600' : aiAnalysis ? 'text-green-600' : aiError ? 'text-amber-600' : 'text-gray-400'}`}>
+                    <Brain className="w-4 h-4" />
+                    <span>{aiError ? 'Basic Analysis' : 'AI Analysis'}</span>
+                    {aiAnalysis && <CheckCircle className="w-4 h-4" />}
+                    {aiError && <AlertCircle className="w-4 h-4" />}
+                  </div>
+                  
+                  <div className={`flex items-center justify-center space-x-2 text-sm ${savingToDb ? 'text-blue-600' : dbResult ? 'text-green-600' : 'text-gray-400'}`}>
+                    <Database className="w-4 h-4" />
+                    <span>Database Save</span>
+                    {dbResult && <CheckCircle className="w-4 h-4" />}
+                  </div>
                 </div>
               </div>
+            ) : (
+              <Upload className="mx-auto w-12 h-12 text-gray-400 mb-4" />
+            )}
+            
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {uploading ? 'Processing...' : 'Upload Your Startup Documents'}
+            </h3>
+            
+            <p className="text-gray-600 mb-4">
+              Drag and drop your files here, or click to browse
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
+              <span className="bg-gray-100 px-3 py-1 rounded-full">CSV</span>
+              <span className="bg-gray-100 px-3 py-1 rounded-full">TXT</span>
+              <span className="bg-gray-100 px-3 py-1 rounded-full">Images</span>
             </div>
-          ) : (
-            <Upload className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-          )}
-          
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {uploading ? 'Processing...' : 'Upload Your Startup Documents'}
-          </h3>
-          
-          <p className="text-gray-600 mb-4">
-            Drag and drop your files here, or click to browse
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
-            <span className="bg-gray-100 px-3 py-1 rounded-full">CSV</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">TXT</span>
-            <span className="bg-gray-100 px-3 py-1 rounded-full">Images</span>
           </div>
         </div>
+
+        {/* AI Error Warning */}
+        {aiError && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
+              <div>
+                <p className="text-amber-800 font-medium">AI Analysis Unavailable</p>
+                <p className="text-amber-700 text-sm mb-2">{aiError}</p>
+                <p className="text-amber-600 text-xs">
+                  To enable AI analysis, make sure you have set your OpenAI API key in the environment variables.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Messages */}
+        {uploadStatus === 'success' && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start">
+              <CheckCircle className="w-5 h-5 text-green-600 mr-3 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-green-800 font-medium">Upload and analysis successful!</p>
+                <p className="text-green-700 text-sm mb-3">
+                  File "{uploadedFile}" has been processed and analyzed.
+                </p>
+                
+                {/* File Processing Results */}
+                {processedContent && (
+                  <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
+                    <div className="flex items-center mb-2">
+                      {getFileIcon(processedContent.type)}
+                      <span className="ml-2 font-medium text-gray-900 capitalize">
+                        {processedContent.type} Content Analysis
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto whitespace-pre-wrap">
+                      {processedContent.content.substring(0, 300)}
+                      {processedContent.content.length > 300 && '...'}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Analysis Results */}
+                {aiAnalysis && Object.keys(aiAnalysis).length > 0 && (
+                  <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
+                    <div className="flex items-center mb-2">
+                      <Brain className="w-6 h-6 text-blue-600" />
+                      <span className="ml-2 font-medium text-gray-900">
+                        {aiError ? 'Basic Analysis Results' : 'AI Analysis Results'}
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      {aiAnalysis.company && (
+                        <div>
+                          <span className="font-medium text-gray-700">Company: </span>
+                          <span className="text-gray-600">{aiAnalysis.company.name || 'Detected'}</span>
+                        </div>
+                      )}
+                      {aiAnalysis.founders && aiAnalysis.founders.length > 0 && (
+                        <div>
+                          <span className="font-medium text-gray-700">Founders: </span>
+                          <span className="text-gray-600">{aiAnalysis.founders.length} detected</span>
+                        </div>
+                      )}
+                      {aiAnalysis.metrics && aiAnalysis.metrics.length > 0 && (
+                        <div>
+                          <span className="font-medium text-gray-700">Metrics: </span>
+                          <span className="text-gray-600">{aiAnalysis.metrics.length} KPIs extracted</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Database Results */}
+                {dbResult && (
+                  <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
+                    <div className="flex items-center mb-2">
+                      <Database className="w-6 h-6 text-purple-600" />
+                      <span className="ml-2 font-medium text-gray-900">Database Results</span>
+                    </div>
+                    <div className="text-sm">
+                      {dbResult.success ? (
+                        <div>
+                          <p className="text-green-600 font-medium mb-1">✅ Data saved successfully!</p>
+                          {dbResult.insertedTables.length > 0 && (
+                            <p className="text-gray-600">
+                              Updated tables: {dbResult.insertedTables.join(', ')}
+                            </p>
+                          )}
+                          {dbResult.companyId && (
+                            <p className="text-gray-600">Company ID: {dbResult.companyId}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-amber-600 font-medium mb-1">⚠️ Partial save</p>
+                          {dbResult.errors.length > 0 && (
+                            <div className="text-gray-600">
+                              {dbResult.errors.slice(0, 2).map((error, i) => (
+                                <p key={i} className="text-xs">• {error}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* KPI Chart Button */}
+                {dbResult?.companyId && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setShowKPIChart(true)}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg font-semibold flex items-center justify-center"
+                    >
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      View Live KPI Dashboard
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {uploadStatus === 'bucket-error' && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
+              <div>
+                <p className="text-amber-800 font-medium">Storage Setup Required</p>
+                <p className="text-amber-700 text-sm mb-3">
+                  The Supabase storage bucket 'uploads' was not found. Please set up your Supabase project:
+                </p>
+                <ol className="text-amber-700 text-sm space-y-1 ml-4 list-decimal">
+                  <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-amber-800 underline hover:text-amber-900">Supabase Dashboard</a></li>
+                  <li>Navigate to Storage section</li>
+                  <li>Create a new bucket named 'uploads'</li>
+                  <li>Configure the bucket to allow public access for file uploads</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {uploadStatus === 'error' && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
+            <div>
+              <p className="text-red-800 font-medium">Upload failed</p>
+              <p className="text-red-700 text-sm">
+                {errorMessage || 'Please ensure your file is a supported format and try again.'}
+              </p>
+              <p className="text-red-600 text-xs mt-2">
+                Check the browser console for detailed error information.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* AI Error Warning */}
-      {aiError && (
-        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
-            <div>
-              <p className="text-amber-800 font-medium">AI Analysis Unavailable</p>
-              <p className="text-amber-700 text-sm mb-2">{aiError}</p>
-              <p className="text-amber-600 text-xs">
-                To enable AI analysis, make sure you have set your OpenAI API key in the environment variables.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Status Messages */}
-      {uploadStatus === 'success' && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-start">
-            <CheckCircle className="w-5 h-5 text-green-600 mr-3 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-green-800 font-medium">Upload and analysis successful!</p>
-              <p className="text-green-700 text-sm mb-3">
-                File "{uploadedFile}" has been processed and analyzed.
-              </p>
-              
-              {/* File Processing Results */}
-              {processedContent && (
-                <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
-                  <div className="flex items-center mb-2">
-                    {getFileIcon(processedContent.type)}
-                    <span className="ml-2 font-medium text-gray-900 capitalize">
-                      {processedContent.type} Content Analysis
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto whitespace-pre-wrap">
-                    {processedContent.content.substring(0, 300)}
-                    {processedContent.content.length > 300 && '...'}
-                  </div>
-                </div>
-              )}
-
-              {/* AI Analysis Results */}
-              {aiAnalysis && Object.keys(aiAnalysis).length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
-                  <div className="flex items-center mb-2">
-                    <Brain className="w-6 h-6 text-blue-600" />
-                    <span className="ml-2 font-medium text-gray-900">
-                      {aiError ? 'Basic Analysis Results' : 'AI Analysis Results'}
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    {aiAnalysis.company && (
-                      <div>
-                        <span className="font-medium text-gray-700">Company: </span>
-                        <span className="text-gray-600">{aiAnalysis.company.name || 'Detected'}</span>
-                      </div>
-                    )}
-                    {aiAnalysis.founders && aiAnalysis.founders.length > 0 && (
-                      <div>
-                        <span className="font-medium text-gray-700">Founders: </span>
-                        <span className="text-gray-600">{aiAnalysis.founders.length} detected</span>
-                      </div>
-                    )}
-                    {aiAnalysis.metrics && aiAnalysis.metrics.length > 0 && (
-                      <div>
-                        <span className="font-medium text-gray-700">Metrics: </span>
-                        <span className="text-gray-600">{aiAnalysis.metrics.length} KPIs extracted</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Database Results */}
-              {dbResult && (
-                <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
-                  <div className="flex items-center mb-2">
-                    <Database className="w-6 h-6 text-purple-600" />
-                    <span className="ml-2 font-medium text-gray-900">Database Results</span>
-                  </div>
-                  <div className="text-sm">
-                    {dbResult.success ? (
-                      <div>
-                        <p className="text-green-600 font-medium mb-1">✅ Data saved successfully!</p>
-                        {dbResult.insertedTables.length > 0 && (
-                          <p className="text-gray-600">
-                            Updated tables: {dbResult.insertedTables.join(', ')}
-                          </p>
-                        )}
-                        {dbResult.companyId && (
-                          <p className="text-gray-600">Company ID: {dbResult.companyId}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-amber-600 font-medium mb-1">⚠️ Partial save</p>
-                        {dbResult.errors.length > 0 && (
-                          <div className="text-gray-600">
-                            {dbResult.errors.slice(0, 2).map((error, i) => (
-                              <p key={i} className="text-xs">• {error}</p>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* KPI Chart Button */}
-              {dbResult?.companyId && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => setShowKPIChart(true)}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg font-semibold flex items-center justify-center"
-                  >
-                    <TrendingUp className="w-5 h-5 mr-2" />
-                    View Live KPI Dashboard
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {uploadStatus === 'bucket-error' && (
-        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
-            <div>
-              <p className="text-amber-800 font-medium">Storage Setup Required</p>
-              <p className="text-amber-700 text-sm mb-3">
-                The Supabase storage bucket 'uploads' was not found. Please set up your Supabase project:
-              </p>
-              <ol className="text-amber-700 text-sm space-y-1 ml-4 list-decimal">
-                <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-amber-800 underline hover:text-amber-900">Supabase Dashboard</a></li>
-                <li>Navigate to Storage section</li>
-                <li>Create a new bucket named 'uploads'</li>
-                <li>Configure the bucket to allow public access for file uploads</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {uploadStatus === 'error' && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-          <AlertCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
-          <div>
-            <p className="text-red-800 font-medium">Upload failed</p>
-            <p className="text-red-700 text-sm">
-              {errorMessage || 'Please ensure your file is a supported format and try again.'}
-            </p>
-            <p className="text-red-600 text-xs mt-2">
-              Check the browser console for detailed error information.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+    </FeatureGate>
   );
 };
 
