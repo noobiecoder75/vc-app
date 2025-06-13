@@ -420,62 +420,62 @@ const CompanyDetailPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* ✅ FIXED: Properly Implemented Tabs Navigation */}
+        {/* ✅ FIXED: Simplified Tabs Container - Removed problematic wrappers */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
+          className="relative z-10"
         >
           <motion.div variants={itemVariants}>
-            <GlowingCard glowColor="purple" intensity="low">
-              <Card>
-                <Tabs defaultValue="overview" className="w-full">
-                  <div className="border-b border-gray-200 px-6 pt-6">
-                    <TabsList className="grid w-full grid-cols-6 bg-gray-100">
-                      <TabsTrigger 
-                        value="overview" 
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <Building2 className="w-4 h-4" />
-                        <span className="hidden sm:inline">Overview</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="kpi-analysis"
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                        <span className="hidden sm:inline">KPI Analysis</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="financial"
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <DollarSign className="w-4 h-4" />
-                        <span className="hidden sm:inline">Financial</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="pitch"
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span className="hidden sm:inline">Pitch Deck</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="market"
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <Globe className="w-4 h-4" />
-                        <span className="hidden sm:inline">Market</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="vc-matching"
-                        className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                      >
-                        <Users className="w-4 h-4" />
-                        <span className="hidden sm:inline">VC Match</span>
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+            <Card className="shadow-lg">
+              <Tabs defaultValue="overview" className="w-full">
+                <div className="border-b border-gray-200 px-6 pt-6">
+                  <TabsList className="grid w-full grid-cols-6 bg-gray-100 h-12">
+                    <TabsTrigger 
+                      value="overview" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="kpi-analysis"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span className="hidden sm:inline">KPI Analysis</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="financial"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                      <span className="hidden sm:inline">Financial</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="pitch"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="hidden sm:inline">Pitch Deck</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="market"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <span className="hidden sm:inline">Market</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="vc-matching"
+                      className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span className="hidden sm:inline">VC Match</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
                   <div className="p-6">
                     {/* ✅ Overview Tab */}
@@ -488,37 +488,34 @@ const CompanyDetailPage = () => {
                       >
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {/* Live KPI Chart */}
-                          <GlowingCard glowColor="emerald" intensity="medium">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="flex items-center">
-                                  <Activity className="w-5 h-5 text-emerald-600 mr-2" />
-                                  Live KPI Dashboard
-                                  <Badge variant="success" className="ml-2">
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    Real-time
-                                  </Badge>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <LiveKPIChart companyId={company.id} companyName={company.name} />
-                              </CardContent>
-                            </Card>
-                          </GlowingCard>
+                          <Card className="shadow-md">
+                            <CardHeader>
+                              <CardTitle className="flex items-center">
+                                <Activity className="w-5 h-5 text-emerald-600 mr-2" />
+                                Live KPI Dashboard
+                                <Badge className="ml-2 bg-green-100 text-green-800">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  Real-time
+                                </Badge>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <LiveKPIChart companyId={company.id} companyName={company.name} />
+                            </CardContent>
+                          </Card>
 
                           {/* Team Information */}
                           {founders.length > 0 && (
-                            <GlowingCard glowColor="blue" intensity="medium">
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center">
-                                    <Users className="w-5 h-5 text-blue-600 mr-2" />
-                                    Founding Team
-                                    <Badge variant="info" className="ml-2">
-                                      <AnimatedCounter value={founders.length} duration={1} />
-                                    </Badge>
-                                  </CardTitle>
-                                </CardHeader>
+                            <Card className="shadow-md">
+                              <CardHeader>
+                                <CardTitle className="flex items-center">
+                                  <Users className="w-5 h-5 text-blue-600 mr-2" />
+                                  Founding Team
+                                  <Badge className="ml-2 bg-blue-100 text-blue-800">
+                                    <AnimatedCounter value={founders.length} duration={1} />
+                                  </Badge>
+                                </CardTitle>
+                              </CardHeader>
                                 <CardContent>
                                   <div className="space-y-4">
                                     {founders.map((founder, index) => (
@@ -565,8 +562,7 @@ const CompanyDetailPage = () => {
                                   </div>
                                 </CardContent>
                               </Card>
-                            </GlowingCard>
-                          )}
+                            )}
                         </div>
                       </motion.div>
                     </TabsContent>
@@ -987,9 +983,8 @@ const CompanyDetailPage = () => {
                   </div>
                 </Tabs>
               </Card>
-            </GlowingCard>
+            </motion.div>
           </motion.div>
-        </motion.div>
       </div>
     </div>
   );
