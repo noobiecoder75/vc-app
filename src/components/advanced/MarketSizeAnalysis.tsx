@@ -6,155 +6,43 @@ import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Progress } from '../ui/progress';
-import AnimatedCounter from './AnimatedCounter';
 import GlowingCard from './GlowingCard';
+import AnimatedCounter from './AnimatedCounter';
 import InsightTooltip from '../InsightTooltip';
 import { 
   Globe, 
   TrendingUp, 
   Target, 
-  BarChart3, 
-  PieChart, 
   Users, 
+  Building2, 
+  PieChart,
+  BarChart3,
   DollarSign,
   Zap,
   Brain,
+  Star,
   Award,
+  Activity,
   ArrowUp,
   ArrowDown,
-  Activity,
-  Layers,
-  Map,
-  Building2,
+  Minus,
+  CheckCircle,
+  AlertTriangle,
   Rocket,
-  Star
+  LineChart
 } from 'lucide-react';
-
-interface MarketData {
-  tam: number;
-  sam: number;
-  som: number;
-  currentMarketShare: number;
-  targetMarketShare: number;
-  marketGrowthRate: number;
-  competitorCount: number;
-  marketMaturity: 'emerging' | 'growth' | 'mature' | 'declining';
-}
-
-interface CompetitorData {
-  name: string;
-  marketShare: number;
-  revenue: number;
-  valuation: number;
-  stage: string;
-  strengths: string[];
-  weaknesses: string[];
-}
 
 interface MarketSizeAnalysisProps {
   companyId?: string;
   industry?: string;
-  className?: string;
 }
 
 const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
   companyId,
-  industry = 'SaaS',
-  className = ''
+  industry = 'SaaS'
 }) => {
-  const [selectedView, setSelectedView] = useState<'overview' | 'bottomup' | 'topdown' | 'competitive'>('overview');
-  const [selectedRegion, setSelectedRegion] = useState<'global' | 'north-america' | 'europe' | 'asia-pacific'>('global');
-  const [timeHorizon, setTimeHorizon] = useState<'1year' | '3year' | '5year'>('3year');
-
-  // Sample market data - in real app, this would come from props/API
-  const marketData: MarketData = {
-    tam: 150000000000, // $150B
-    sam: 25000000000,  // $25B
-    som: 2500000000,   // $2.5B
-    currentMarketShare: 0.05, // 0.05%
-    targetMarketShare: 2.0,   // 2%
-    marketGrowthRate: 15.2,   // 15.2% CAGR
-    competitorCount: 1247,
-    marketMaturity: 'growth'
-  };
-
-  const competitors: CompetitorData[] = [
-    {
-      name: 'Market Leader Corp',
-      marketShare: 23.5,
-      revenue: 5875000000,
-      valuation: 45000000000,
-      stage: 'Public',
-      strengths: ['Brand Recognition', 'Enterprise Sales', 'Global Presence'],
-      weaknesses: ['Legacy Technology', 'High Prices', 'Slow Innovation']
-    },
-    {
-      name: 'Innovation Dynamics',
-      marketShare: 12.8,
-      revenue: 3200000000,
-      valuation: 18000000000,
-      stage: 'Series D',
-      strengths: ['Modern Tech Stack', 'Fast Growth', 'Developer-Friendly'],
-      weaknesses: ['Limited Enterprise', 'Narrow Focus', 'Funding Dependent']
-    },
-    {
-      name: 'Global Solutions Inc',
-      marketShare: 8.9,
-      revenue: 2225000000,
-      valuation: 12000000000,
-      stage: 'Public',
-      strengths: ['International Reach', 'Partnerships', 'Compliance'],
-      weaknesses: ['Complex Product', 'Poor UX', 'High Churn']
-    }
-  ];
-
-  const bottomUpData = {
-    totalAddressableCustomers: 2500000,
-    targetCustomerSegments: [
-      { name: 'Enterprise (1000+ employees)', size: 125000, penetration: 15, avgRevenue: 50000 },
-      { name: 'Mid-Market (100-999 employees)', size: 750000, penetration: 8, avgRevenue: 15000 },
-      { name: 'SMB (10-99 employees)', size: 1625000, penetration: 3, avgRevenue: 3000 }
-    ],
-    conversionRates: {
-      awareness: 25,
-      consideration: 40,
-      trial: 60,
-      purchase: 35
-    }
-  };
-
-  const topDownData = {
-    totalMarketValue: marketData.tam,
-    marketSegments: [
-      { name: 'Core Platform', percentage: 45, value: marketData.tam * 0.45 },
-      { name: 'Analytics & BI', percentage: 25, value: marketData.tam * 0.25 },
-      { name: 'Integration Services', percentage: 20, value: marketData.tam * 0.20 },
-      { name: 'Professional Services', percentage: 10, value: marketData.tam * 0.10 }
-    ],
-    geographicSplit: [
-      { region: 'North America', percentage: 42, value: marketData.tam * 0.42 },
-      { region: 'Europe', percentage: 28, value: marketData.tam * 0.28 },
-      { region: 'Asia Pacific', percentage: 22, value: marketData.tam * 0.22 },
-      { region: 'Rest of World', percentage: 8, value: marketData.tam * 0.08 }
-    ]
-  };
-
-  const formatCurrency = (amount: number) => {
-    if (amount >= 1000000000) return `$${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}K`;
-    return `$${amount.toLocaleString()}`;
-  };
-
-  const getMaturityColor = (maturity: string) => {
-    switch (maturity) {
-      case 'emerging': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'growth': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-      case 'mature': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'declining': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
+  const [selectedAnalysisType, setSelectedAnalysisType] = useState<'bottom-up' | 'top-down' | 'competitive'>('bottom-up');
+  const [selectedRegion, setSelectedRegion] = useState('global');
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -169,37 +57,117 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
     visible: { opacity: 1, y: 0 }
   };
 
+  // Bottom-Up Analysis Data (80% focus)
+  const bottomUpData = {
+    totalAddressableCustomers: 2500000,
+    customerSegments: [
+      { name: 'Enterprise (1000+ employees)', customers: 500000, penetration: 0.8, revenue: 50000, total: 20000000000 },
+      { name: 'Mid-Market (100-999 employees)', customers: 800000, penetration: 2.5, revenue: 25000, total: 500000000 },
+      { name: 'SMB (10-99 employees)', customers: 1200000, penetration: 1.2, revenue: 5000, total: 72000000 }
+    ],
+    conversionFunnel: [
+      { stage: 'Total Addressable Market', value: 2500000, percentage: 100 },
+      { stage: 'Aware of Problem', value: 1250000, percentage: 50 },
+      { stage: 'Actively Looking', value: 375000, percentage: 15 },
+      { stage: 'Considering Solutions', value: 125000, percentage: 5 },
+      { stage: 'Ready to Purchase', value: 25000, percentage: 1 }
+    ],
+    unitEconomics: {
+      averageContractValue: 25000,
+      salesCycleMonths: 6,
+      churnRate: 5,
+      expansionRate: 125,
+      grossMargin: 85
+    }
+  };
+
+  // Top-Down Analysis Data (20% focus)
+  const topDownData = {
+    totalMarketSize: 150000000000,
+    cagr: 15.2,
+    marketSegments: [
+      { name: 'Core Platform', size: 67500000000, percentage: 45, growth: 18.5 },
+      { name: 'Analytics & BI', size: 37500000000, percentage: 25, growth: 22.1 },
+      { name: 'Integration Services', size: 30000000000, percentage: 20, growth: 12.8 },
+      { name: 'Professional Services', size: 15000000000, percentage: 10, growth: 8.5 }
+    ],
+    geographicSplit: [
+      { region: 'North America', size: 63000000000, percentage: 42, growth: 14.2 },
+      { region: 'Europe', size: 42000000000, percentage: 28, growth: 16.8 },
+      { region: 'Asia Pacific', size: 33000000000, percentage: 22, growth: 19.5 },
+      { region: 'Rest of World', size: 12000000000, percentage: 8, growth: 25.2 }
+    ]
+  };
+
+  // Competitive Landscape Data
+  const competitiveData = {
+    marketShare: [
+      { company: 'Market Leader', share: 23, revenue: 34500000000, growth: 12.5 },
+      { company: 'Second Player', share: 18, revenue: 27000000000, growth: 15.2 },
+      { company: 'Third Player', share: 12, revenue: 18000000000, growth: 8.9 },
+      { company: 'Your Company', share: 0.15, revenue: 225000000, growth: 18.5 },
+      { company: 'Others', share: 46.85, revenue: 70275000000, growth: 11.8 }
+    ],
+    competitiveAdvantages: [
+      { advantage: 'Technology Innovation', score: 92, description: 'AI-powered features ahead of competition' },
+      { advantage: 'Speed to Market', score: 88, description: '50% faster implementation than competitors' },
+      { advantage: 'Customer Experience', score: 85, description: 'Higher NPS and satisfaction scores' },
+      { advantage: 'Pricing Strategy', score: 78, description: '15% more cost-effective solution' },
+      { advantage: 'Market Presence', score: 45, description: 'Limited brand awareness vs established players' }
+    ]
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+    if (score >= 60) return 'text-blue-600 bg-blue-50 border-blue-200';
+    if (score >= 40) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    return 'text-red-600 bg-red-50 border-red-200';
+  };
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value.toLocaleString()}`;
+  };
+
+  const formatNumber = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+    return value.toLocaleString();
+  };
+
   return (
-    <div className={`space-y-8 ${className}`}>
-      {/* Header with Controls */}
+    <div className="space-y-8">
+      {/* Header */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
         <motion.div variants={itemVariants}>
-          <GlowingCard glowColor="blue" intensity="medium">
+          <GlowingCard glowColor="emerald" intensity="high">
             <Card>
               <CardHeader>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                   <div>
-                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-                      <Globe className="w-7 h-7 text-blue-600" />
+                    <CardTitle className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
+                      <Globe className="w-8 h-8 text-emerald-600" />
                       <span>Market Size Analysis</span>
                       <Badge variant="success" className="text-sm">
                         <Brain className="w-3 h-3 mr-1" />
                         AI-Powered
                       </Badge>
                     </CardTitle>
-                    <p className="text-gray-600 mt-1">
-                      Comprehensive market analysis with bottom-up and top-down approaches
+                    <p className="text-gray-600 mt-1 text-lg">
+                      Comprehensive market opportunity assessment with bottom-up and top-down analysis
                     </p>
                   </div>
                   
                   <div className="flex items-center space-x-3">
                     <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                      <SelectTrigger className="w-40">
-                        <Map className="w-4 h-4 mr-2" />
+                      <SelectTrigger className="w-32">
+                        <Globe className="w-4 h-4 mr-2" />
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -209,95 +177,71 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
                         <SelectItem value="asia-pacific">Asia Pacific</SelectItem>
                       </SelectContent>
                     </Select>
-                    
-                    <Select value={timeHorizon} onValueChange={setTimeHorizon}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1year">1 Year</SelectItem>
-                        <SelectItem value="3year">3 Years</SelectItem>
-                        <SelectItem value="5year">5 Years</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
                 
-                {/* Market Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                {/* TAM/SAM/SOM Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                   <InsightTooltip
                     title="Total Addressable Market"
                     description="The total market demand for your product category"
                     insight="TAM represents the maximum revenue opportunity if you captured 100% market share"
-                    examples={["Uber's TAM includes all transportation", "Airbnb's TAM includes all accommodation"]}
+                    examples={["Salesforce TAM: $175B", "Microsoft Office TAM: $50B"]}
                   >
-                    <div className="bg-blue-50 rounded-lg p-4 cursor-help hover:bg-blue-100 transition-colors">
-                      <div className="text-2xl font-bold text-blue-600">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 text-center cursor-help hover:shadow-md transition-shadow">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
                         <AnimatedCounter 
-                          value={marketData.tam / 1000000000} 
+                          value={topDownData.totalMarketSize / 1000000000}
                           prefix="$"
                           suffix="B"
                           decimals={0}
                           duration={2}
                         />
                       </div>
-                      <div className="text-sm text-blue-700">Total Addressable Market</div>
+                      <div className="text-sm text-blue-700 font-medium">Total Addressable Market</div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        Growing at <AnimatedCounter value={topDownData.cagr} suffix="%" decimals={1} duration={1.5} /> CAGR
+                      </div>
                     </div>
                   </InsightTooltip>
                   
                   <InsightTooltip
                     title="Serviceable Addressable Market"
                     description="The portion of TAM you can realistically target"
-                    insight="SAM is your realistic market opportunity based on your business model"
+                    insight="SAM focuses on your specific geographic and demographic segments"
                   >
-                    <div className="bg-purple-50 rounded-lg p-4 cursor-help hover:bg-purple-100 transition-colors">
-                      <div className="text-2xl font-bold text-purple-600">
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-6 text-center cursor-help hover:shadow-md transition-shadow">
+                      <div className="text-4xl font-bold text-purple-600 mb-2">
                         <AnimatedCounter 
-                          value={marketData.sam / 1000000000} 
+                          value={(topDownData.totalMarketSize * 0.4) / 1000000000}
                           prefix="$"
                           suffix="B"
                           decimals={0}
                           duration={2.2}
                         />
                       </div>
-                      <div className="text-sm text-purple-700">Serviceable Addressable Market</div>
+                      <div className="text-sm text-purple-700 font-medium">Serviceable Addressable Market</div>
+                      <div className="text-xs text-purple-600 mt-1">40% of TAM</div>
                     </div>
                   </InsightTooltip>
                   
                   <InsightTooltip
                     title="Serviceable Obtainable Market"
                     description="The portion of SAM you can capture short-term"
-                    insight="SOM is your immediate market opportunity based on current capabilities"
+                    insight="SOM represents your realistic market opportunity in the next 3-5 years"
                   >
-                    <div className="bg-emerald-50 rounded-lg p-4 cursor-help hover:bg-emerald-100 transition-colors">
-                      <div className="text-2xl font-bold text-emerald-600">
+                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg p-6 text-center cursor-help hover:shadow-md transition-shadow">
+                      <div className="text-4xl font-bold text-emerald-600 mb-2">
                         <AnimatedCounter 
-                          value={marketData.som / 1000000000} 
+                          value={(topDownData.totalMarketSize * 0.04) / 1000000000}
                           prefix="$"
                           suffix="B"
                           decimals={1}
                           duration={2.4}
                         />
                       </div>
-                      <div className="text-sm text-emerald-700">Serviceable Obtainable Market</div>
-                    </div>
-                  </InsightTooltip>
-                  
-                  <InsightTooltip
-                    title="Market Growth Rate"
-                    description="Annual compound growth rate of the market"
-                    insight="High growth markets offer more opportunity but also more competition"
-                  >
-                    <div className="bg-orange-50 rounded-lg p-4 cursor-help hover:bg-orange-100 transition-colors">
-                      <div className="text-2xl font-bold text-orange-600">
-                        <AnimatedCounter 
-                          value={marketData.marketGrowthRate} 
-                          suffix="%"
-                          decimals={1}
-                          duration={2.6}
-                        />
-                      </div>
-                      <div className="text-sm text-orange-700">Annual Growth Rate</div>
+                      <div className="text-sm text-emerald-700 font-medium">Serviceable Obtainable Market</div>
+                      <div className="text-xs text-emerald-600 mt-1">10% of SAM</div>
                     </div>
                   </InsightTooltip>
                 </div>
@@ -307,7 +251,7 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
         </motion.div>
       </motion.div>
 
-      {/* Main Analysis Tabs */}
+      {/* Analysis Tabs */}
       <motion.div
         initial="hidden"
         animate="visible"
@@ -315,29 +259,22 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
       >
         <motion.div variants={itemVariants}>
           <Card className="shadow-lg">
-            <Tabs value={selectedView} onValueChange={(value) => setSelectedView(value as any)}>
+            <Tabs value={selectedAnalysisType} onValueChange={(value) => setSelectedAnalysisType(value as any)}>
               <div className="border-b border-gray-200 px-6 pt-6">
-                <TabsList className="grid w-full grid-cols-4 bg-gray-100 h-12">
+                <TabsList className="grid w-full grid-cols-3 bg-gray-100 h-12">
                   <TabsTrigger 
-                    value="overview" 
-                    className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
-                  >
-                    <Globe className="w-4 h-4" />
-                    <span className="hidden sm:inline">Overview</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="bottomup"
+                    value="bottom-up" 
                     className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
                   >
                     <Users className="w-4 h-4" />
-                    <span className="hidden sm:inline">Bottom-Up</span>
+                    <span className="hidden sm:inline">Bottom-Up (80%)</span>
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="topdown"
+                    value="top-down"
                     className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-blue-600"
                   >
-                    <Layers className="w-4 h-4" />
-                    <span className="hidden sm:inline">Top-Down</span>
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Top-Down (20%)</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="competitive"
@@ -350,170 +287,8 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
               </div>
 
               <div className="p-6">
-                {/* Overview Tab */}
-                <TabsContent value="overview" className="mt-0">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="space-y-8"
-                  >
-                    {/* Market Maturity and Status */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <GlowingCard glowColor="emerald" intensity="low">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center">
-                              <Activity className="w-5 h-5 text-emerald-600 mr-2" />
-                              Market Maturity
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className={`inline-flex items-center px-3 py-2 rounded-full border ${getMaturityColor(marketData.marketMaturity)}`}>
-                                <span className="font-medium capitalize">{marketData.marketMaturity} Market</span>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm text-gray-600">Market Growth</span>
-                                  <span className="font-semibold text-emerald-600">
-                                    <AnimatedCounter value={marketData.marketGrowthRate} suffix="%" decimals={1} />
-                                  </span>
-                                </div>
-                                <Progress value={marketData.marketGrowthRate} className="h-2" />
-                                
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm text-gray-600">Competitor Count</span>
-                                  <span className="font-semibold text-gray-900">
-                                    <AnimatedCounter value={marketData.competitorCount} />
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </GlowingCard>
-
-                      <GlowingCard glowColor="purple" intensity="low">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center">
-                              <Target className="w-5 h-5 text-purple-600 mr-2" />
-                              Market Opportunity
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="text-center">
-                                <div className="text-3xl font-bold text-purple-600 mb-1">
-                                  <AnimatedCounter 
-                                    value={(marketData.som / marketData.tam) * 100} 
-                                    suffix="%" 
-                                    decimals={2}
-                                    duration={2}
-                                  />
-                                </div>
-                                <div className="text-sm text-gray-600">SOM as % of TAM</div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Current Share</span>
-                                  <span className="font-medium">{marketData.currentMarketShare}%</span>
-                                </div>
-                                <Progress value={marketData.currentMarketShare} className="h-2" />
-                                
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Target Share</span>
-                                  <span className="font-medium">{marketData.targetMarketShare}%</span>
-                                </div>
-                                <Progress value={marketData.targetMarketShare} className="h-2" />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </GlowingCard>
-                    </div>
-
-                    {/* TAM/SAM/SOM Visualization */}
-                    <GlowingCard glowColor="blue" intensity="medium">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <PieChart className="w-5 h-5 text-blue-600 mr-2" />
-                            Market Size Breakdown
-                            <Badge variant="info" className="ml-2">
-                              <Zap className="w-3 h-3 mr-1" />
-                              Interactive
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Visual Representation */}
-                            <div className="flex items-center justify-center">
-                              <div className="relative">
-                                {/* TAM Circle */}
-                                <div className="w-64 h-64 rounded-full bg-blue-100 border-4 border-blue-300 flex items-center justify-center relative">
-                                  <span className="absolute top-4 text-xs font-medium text-blue-700">TAM</span>
-                                  
-                                  {/* SAM Circle */}
-                                  <div className="w-40 h-40 rounded-full bg-purple-100 border-4 border-purple-300 flex items-center justify-center relative">
-                                    <span className="absolute top-2 text-xs font-medium text-purple-700">SAM</span>
-                                    
-                                    {/* SOM Circle */}
-                                    <div className="w-20 h-20 rounded-full bg-emerald-100 border-4 border-emerald-300 flex items-center justify-center">
-                                      <span className="text-xs font-medium text-emerald-700">SOM</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Market Size Details */}
-                            <div className="space-y-6">
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                                  <div>
-                                    <div className="font-semibold text-blue-900">Total Addressable Market</div>
-                                    <div className="text-sm text-blue-700">Everyone who could use your product</div>
-                                  </div>
-                                  <div className="text-2xl font-bold text-blue-600">
-                                    {formatCurrency(marketData.tam)}
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                                  <div>
-                                    <div className="font-semibold text-purple-900">Serviceable Addressable Market</div>
-                                    <div className="text-sm text-purple-700">Who you can realistically reach</div>
-                                  </div>
-                                  <div className="text-2xl font-bold text-purple-600">
-                                    {formatCurrency(marketData.sam)}
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
-                                  <div>
-                                    <div className="font-semibold text-emerald-900">Serviceable Obtainable Market</div>
-                                    <div className="text-sm text-emerald-700">Who you can capture short-term</div>
-                                  </div>
-                                  <div className="text-2xl font-bold text-emerald-600">
-                                    {formatCurrency(marketData.som)}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </GlowingCard>
-                  </motion.div>
-                </TabsContent>
-
                 {/* Bottom-Up Analysis Tab */}
-                <TabsContent value="bottomup" className="mt-0">
+                <TabsContent value="bottom-up" className="mt-0">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -522,248 +297,76 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
                   >
                     <div className="text-center mb-8">
                       <h3 className="text-2xl font-bold text-gray-900 mb-2">Bottom-Up Market Analysis</h3>
-                      <p className="text-gray-600">Building market size from customer segments and unit economics</p>
+                      <p className="text-gray-600">Customer-centric approach focusing on addressable segments and unit economics</p>
+                      <Badge variant="info" className="mt-2">
+                        <Star className="w-3 h-3 mr-1" />
+                        Primary Analysis Method (80% Weight)
+                      </Badge>
                     </div>
 
                     {/* Customer Segments */}
-                    <GlowingCard glowColor="emerald" intensity="medium">
+                    <GlowingCard glowColor="blue" intensity="medium">
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center">
-                            <Users className="w-5 h-5 text-emerald-600 mr-2" />
-                            Target Customer Segments
-                            <Badge variant="success" className="ml-2">
-                              <Building2 className="w-3 h-3 mr-1" />
-                              B2B Focus
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-6">
-                            {bottomUpData.targetCustomerSegments.map((segment, index) => {
-                              const revenue = segment.size * (segment.penetration / 100) * segment.avgRevenue;
-                              return (
-                                <motion.div
-                                  key={index}
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: index * 0.1 }}
-                                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                                >
-                                  <div className="flex items-center justify-between mb-4">
-                                    <h4 className="font-semibold text-gray-900">{segment.name}</h4>
-                                    <Badge variant="outline">
-                                      <AnimatedCounter value={segment.penetration} suffix="%" /> penetration
-                                    </Badge>
-                                  </div>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                                      <div className="text-lg font-bold text-blue-600">
-                                        <AnimatedCounter value={segment.size / 1000} suffix="K" />
-                                      </div>
-                                      <div className="text-xs text-blue-700">Total Companies</div>
-                                    </div>
-                                    
-                                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                                      <div className="text-lg font-bold text-purple-600">
-                                        <AnimatedCounter value={segment.penetration} suffix="%" />
-                                      </div>
-                                      <div className="text-xs text-purple-700">Target Penetration</div>
-                                    </div>
-                                    
-                                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                                      <div className="text-lg font-bold text-emerald-600">
-                                        {formatCurrency(segment.avgRevenue)}
-                                      </div>
-                                      <div className="text-xs text-emerald-700">Avg Revenue/Customer</div>
-                                    </div>
-                                    
-                                    <div className="text-center p-3 bg-orange-50 rounded-lg">
-                                      <div className="text-lg font-bold text-orange-600">
-                                        {formatCurrency(revenue)}
-                                      </div>
-                                      <div className="text-xs text-orange-700">Segment Revenue</div>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="mt-4">
-                                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                                      <span>Market Penetration</span>
-                                      <span>{segment.penetration}%</span>
-                                    </div>
-                                    <Progress value={segment.penetration} className="h-2" />
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </GlowingCard>
-
-                    {/* Conversion Funnel */}
-                    <GlowingCard glowColor="purple" intensity="medium">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <BarChart3 className="w-5 h-5 text-purple-600 mr-2" />
-                            Customer Acquisition Funnel
+                            <Building2 className="w-5 h-5 text-blue-600 mr-2" />
+                            Customer Segments Analysis
                             <Badge variant="info" className="ml-2">
-                              <Rocket className="w-3 h-3 mr-1" />
-                              Conversion Rates
+                              <AnimatedCounter value={bottomUpData.totalAddressableCustomers / 1000000} suffix="M" decimals={1} duration={2} />
+                              <span className="ml-1">Total Customers</span>
                             </Badge>
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              {Object.entries(bottomUpData.conversionRates).map(([stage, rate], index) => (
-                                <motion.div
-                                  key={stage}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.1 }}
-                                  className="text-center"
-                                >
-                                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
-                                    <div className="text-3xl font-bold text-purple-600 mb-2">
-                                      <AnimatedCounter value={rate} suffix="%" duration={1.5 + index * 0.2} />
-                                    </div>
-                                    <div className="text-sm font-medium text-gray-700 capitalize">{stage}</div>
-                                    <div className="mt-2">
-                                      <Progress value={rate} className="h-2" />
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                            
-                            {/* Funnel Visualization */}
-                            <div className="bg-gray-50 rounded-lg p-6">
-                              <h4 className="font-medium text-gray-900 mb-4 text-center">Customer Journey Flow</h4>
-                              <div className="flex items-center justify-center space-x-4">
-                                {Object.entries(bottomUpData.conversionRates).map(([stage, rate], index) => (
-                                  <React.Fragment key={stage}>
-                                    <div className="text-center">
-                                      <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center border-2 border-purple-300">
-                                        <span className="text-sm font-bold text-purple-700">{rate}%</span>
-                                      </div>
-                                      <div className="text-xs text-gray-600 mt-2 capitalize">{stage}</div>
-                                    </div>
-                                    {index < Object.keys(bottomUpData.conversionRates).length - 1 && (
-                                      <ArrowUp className="w-5 h-5 text-gray-400 rotate-90" />
-                                    )}
-                                  </React.Fragment>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </GlowingCard>
-
-                    {/* Bottom-Up Summary */}
-                    <GlowingCard glowColor="blue" intensity="high">
-                      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
-                        <div className="text-center">
-                          <h3 className="text-2xl font-bold mb-4">Bottom-Up Market Calculation</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                <AnimatedCounter 
-                                  value={bottomUpData.totalAddressableCustomers / 1000000} 
-                                  suffix="M" 
-                                  decimals={1}
-                                  duration={2}
-                                />
-                              </div>
-                              <div className="text-blue-100">Total Addressable Customers</div>
-                            </div>
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                <AnimatedCounter 
-                                  value={bottomUpData.targetCustomerSegments.reduce((sum, seg) => 
-                                    sum + (seg.size * seg.penetration / 100), 0) / 1000
-                                  } 
-                                  suffix="K" 
-                                  decimals={0}
-                                  duration={2.2}
-                                />
-                              </div>
-                              <div className="text-blue-100">Reachable Customers</div>
-                            </div>
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                {formatCurrency(
-                                  bottomUpData.targetCustomerSegments.reduce((sum, seg) => 
-                                    sum + (seg.size * seg.penetration / 100 * seg.avgRevenue), 0
-                                  )
-                                )}
-                              </div>
-                              <div className="text-blue-100">Total Revenue Opportunity</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </GlowingCard>
-                  </motion.div>
-                </TabsContent>
-
-                {/* Top-Down Analysis Tab */}
-                <TabsContent value="topdown" className="mt-0">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="space-y-8"
-                  >
-                    <div className="text-center mb-8">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Top-Down Market Analysis</h3>
-                      <p className="text-gray-600">Market size analysis from industry reports and research</p>
-                    </div>
-
-                    {/* Market Segments */}
-                    <GlowingCard glowColor="orange" intensity="medium">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <Layers className="w-5 h-5 text-orange-600 mr-2" />
-                            Market Segments Breakdown
-                            <Badge variant="warning" className="ml-2">
-                              <Star className="w-3 h-3 mr-1" />
-                              Industry Data
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-6">
-                            {topDownData.marketSegments.map((segment, index) => (
-                              <motion.div
+                            {bottomUpData.customerSegments.map((segment, index) => (
+                              <motion.div 
                                 key={index}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: index * 0.1 }}
-                                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                               >
                                 <div className="flex items-center justify-between mb-4">
                                   <h4 className="font-semibold text-gray-900">{segment.name}</h4>
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="outline">
-                                      <AnimatedCounter value={segment.percentage} suffix="%" />
-                                    </Badge>
-                                    <span className="text-lg font-bold text-orange-600">
-                                      {formatCurrency(segment.value)}
-                                    </span>
+                                  <Badge variant="outline">
+                                    {formatCurrency(segment.total)}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                    <div className="font-bold text-blue-600">
+                                      <AnimatedCounter value={segment.customers / 1000} suffix="K" duration={1.5} />
+                                    </div>
+                                    <div className="text-blue-700">Total Companies</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                                    <div className="font-bold text-emerald-600">
+                                      <AnimatedCounter value={segment.penetration} suffix="%" decimals={1} duration={1.5} />
+                                    </div>
+                                    <div className="text-emerald-700">Penetration Rate</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                                    <div className="font-bold text-purple-600">
+                                      {formatCurrency(segment.revenue)}
+                                    </div>
+                                    <div className="text-purple-700">Avg Contract Value</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-orange-50 rounded-lg">
+                                    <div className="font-bold text-orange-600">
+                                      {formatCurrency(segment.total)}
+                                    </div>
+                                    <div className="text-orange-700">Market Opportunity</div>
                                   </div>
                                 </div>
                                 
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm text-gray-600">
-                                    <span>Market Share</span>
-                                    <span>{segment.percentage}%</span>
+                                <div className="mt-4">
+                                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Market Penetration</span>
+                                    <span>{segment.penetration}%</span>
                                   </div>
-                                  <Progress value={segment.percentage} className="h-3" />
+                                  <Progress value={segment.penetration} className="h-2" />
                                 </div>
                               </motion.div>
                             ))}
@@ -772,124 +375,208 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
                       </Card>
                     </GlowingCard>
 
-                    {/* Geographic Distribution */}
-                    <GlowingCard glowColor="emerald" intensity="medium">
+                    {/* Conversion Funnel */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <GlowingCard glowColor="emerald" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Activity className="w-5 h-5 text-emerald-600 mr-2" />
+                              Customer Acquisition Funnel
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              {bottomUpData.conversionFunnel.map((stage, index) => (
+                                <motion.div 
+                                  key={index}
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className="relative"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-700">{stage.stage}</span>
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-lg font-bold text-gray-900">
+                                        <AnimatedCounter value={stage.value / 1000} suffix="K" duration={1.5} />
+                                      </span>
+                                      <Badge variant="outline" className="text-xs">
+                                        {stage.percentage}%
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-3">
+                                    <motion.div
+                                      className="h-3 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${stage.percentage}%` }}
+                                      transition={{ duration: 1, delay: index * 0.1 }}
+                                    />
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+
+                      {/* Unit Economics */}
+                      <GlowingCard glowColor="purple" intensity="medium">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <DollarSign className="w-5 h-5 text-purple-600 mr-2" />
+                              Unit Economics
+                              <Badge variant="success" className="ml-2">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Healthy
+                              </Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                                  <div className="text-2xl font-bold text-purple-600">
+                                    {formatCurrency(bottomUpData.unitEconomics.averageContractValue)}
+                                  </div>
+                                  <div className="text-sm text-purple-700">Avg Contract Value</div>
+                                </div>
+                                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                  <div className="text-2xl font-bold text-blue-600">
+                                    <AnimatedCounter value={bottomUpData.unitEconomics.salesCycleMonths} duration={1.5} />
+                                  </div>
+                                  <div className="text-sm text-blue-700">Sales Cycle (Months)</div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-3 text-sm">
+                                <div className="text-center p-2 bg-red-50 rounded">
+                                  <div className="font-bold text-red-600">
+                                    <AnimatedCounter value={bottomUpData.unitEconomics.churnRate} suffix="%" duration={1.5} />
+                                  </div>
+                                  <div className="text-red-700">Churn Rate</div>
+                                </div>
+                                <div className="text-center p-2 bg-emerald-50 rounded">
+                                  <div className="font-bold text-emerald-600">
+                                    <AnimatedCounter value={bottomUpData.unitEconomics.expansionRate} suffix="%" duration={1.5} />
+                                  </div>
+                                  <div className="text-emerald-700">Expansion Rate</div>
+                                </div>
+                                <div className="text-center p-2 bg-blue-50 rounded">
+                                  <div className="font-bold text-blue-600">
+                                    <AnimatedCounter value={bottomUpData.unitEconomics.grossMargin} suffix="%" duration={1.5} />
+                                  </div>
+                                  <div className="text-blue-700">Gross Margin</div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </GlowingCard>
+                    </div>
+                  </motion.div>
+                </TabsContent>
+
+                {/* Top-Down Analysis Tab */}
+                <TabsContent value="top-down" className="mt-0">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-8"
+                  >
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Top-Down Market Analysis</h3>
+                      <p className="text-gray-600">Industry reports and market research validation</p>
+                      <Badge variant="warning" className="mt-2">
+                        <LineChart className="w-3 h-3 mr-1" />
+                        Validation Method (20% Weight)
+                      </Badge>
+                    </div>
+
+                    {/* Market Segments */}
+                    <GlowingCard glowColor="orange" intensity="medium">
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center">
-                            <Map className="w-5 h-5 text-emerald-600 mr-2" />
-                            Geographic Market Distribution
-                            <Badge variant="success" className="ml-2">
-                              <Globe className="w-3 h-3 mr-1" />
-                              Global
+                            <PieChart className="w-5 h-5 text-orange-600 mr-2" />
+                            Market Segments
+                            <Badge variant="info" className="ml-2">
+                              {formatCurrency(topDownData.totalMarketSize)}
                             </Badge>
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Regional Breakdown */}
-                            <div className="space-y-4">
-                              {topDownData.geographicSplit.map((region, index) => (
-                                <motion.div
-                                  key={index}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.1 }}
-                                  className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium text-emerald-900">{region.region}</span>
-                                    <span className="text-lg font-bold text-emerald-600">
-                                      {formatCurrency(region.value)}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between text-sm text-emerald-700 mb-1">
-                                    <span>Market Share</span>
-                                    <span>{region.percentage}%</span>
-                                  </div>
-                                  <Progress value={region.percentage} className="h-2" />
-                                </motion.div>
-                              ))}
-                            </div>
-                            
-                            {/* Market Insights */}
-                            <div className="space-y-4">
-                              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                <h4 className="font-medium text-blue-900 mb-3">Market Insights</h4>
-                                <div className="space-y-3 text-sm text-blue-800">
-                                  <div className="flex items-start space-x-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                    <span>North America leads with 42% market share due to early adoption</span>
-                                  </div>
-                                  <div className="flex items-start space-x-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                    <span>Europe shows strong growth potential with increasing digitization</span>
-                                  </div>
-                                  <div className="flex items-start space-x-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                    <span>Asia Pacific is fastest growing region at 25% CAGR</span>
-                                  </div>
-                                  <div className="flex items-start space-x-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                    <span>Emerging markets offer significant untapped opportunity</span>
-                                  </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {topDownData.marketSegments.map((segment, index) => (
+                              <motion.div 
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="border border-gray-200 rounded-lg p-4"
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="font-semibold text-gray-900">{segment.name}</h4>
+                                  <Badge variant="outline">{segment.percentage}%</Badge>
                                 </div>
-                              </div>
-                              
-                              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                <h4 className="font-medium text-purple-900 mb-3">Growth Drivers</h4>
-                                <div className="space-y-2 text-sm text-purple-800">
-                                  <div className="flex items-center space-x-2">
-                                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                                    <span>Digital transformation initiatives</span>
+                                
+                                <div className="text-center mb-3">
+                                  <div className="text-2xl font-bold text-orange-600">
+                                    {formatCurrency(segment.size)}
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                                    <span>Remote work adoption</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                                    <span>AI and automation trends</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                                    <span>Regulatory compliance needs</span>
-                                  </div>
+                                  <div className="text-sm text-gray-600">Market Size</div>
                                 </div>
-                              </div>
-                            </div>
+                                
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Growth Rate</span>
+                                  <span className="font-semibold text-emerald-600">
+                                    +<AnimatedCounter value={segment.growth} suffix="%" decimals={1} duration={1.5} />
+                                  </span>
+                                </div>
+                                
+                                <Progress value={segment.percentage} className="mt-2 h-2" />
+                              </motion.div>
+                            ))}
                           </div>
                         </CardContent>
                       </Card>
                     </GlowingCard>
 
-                    {/* Top-Down Summary */}
-                    <GlowingCard glowColor="purple" intensity="high">
-                      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-8 text-white">
-                        <div className="text-center">
-                          <h3 className="text-2xl font-bold mb-6">Top-Down Market Validation</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                {formatCurrency(topDownData.totalMarketValue)}
-                              </div>
-                              <div className="text-purple-100">Total Market Value</div>
-                            </div>
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                <AnimatedCounter value={15.2} suffix="%" decimals={1} duration={2} />
-                              </div>
-                              <div className="text-purple-100">Annual Growth Rate</div>
-                            </div>
-                            <div>
-                              <div className="text-3xl font-bold mb-2">
-                                <AnimatedCounter value={5} duration={1.5} />
-                              </div>
-                              <div className="text-purple-100">Years to Maturity</div>
-                            </div>
+                    {/* Geographic Distribution */}
+                    <GlowingCard glowColor="blue" intensity="medium">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            <Globe className="w-5 h-5 text-blue-600 mr-2" />
+                            Geographic Distribution
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {topDownData.geographicSplit.map((region, index) => (
+                              <motion.div 
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="text-center p-4 bg-blue-50 rounded-lg"
+                              >
+                                <div className="text-xl font-bold text-blue-600 mb-1">
+                                  {formatCurrency(region.size)}
+                                </div>
+                                <div className="text-sm font-medium text-blue-900 mb-2">{region.region}</div>
+                                <div className="text-xs text-blue-700 mb-2">{region.percentage}% of market</div>
+                                <div className="text-xs text-emerald-600 font-medium">
+                                  +{region.growth}% growth
+                                </div>
+                              </motion.div>
+                            ))}
                           </div>
-                        </div>
-                      </div>
+                        </CardContent>
+                      </Card>
                     </GlowingCard>
                   </motion.div>
                 </TabsContent>
@@ -904,190 +591,100 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
                   >
                     <div className="text-center mb-8">
                       <h3 className="text-2xl font-bold text-gray-900 mb-2">Competitive Landscape</h3>
-                      <p className="text-gray-600">Analysis of key competitors and market positioning</p>
+                      <p className="text-gray-600">Market share analysis and competitive positioning</p>
                     </div>
 
-                    {/* Competitor Cards */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {competitors.map((competitor, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <GlowingCard 
-                            glowColor={index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'purple' : 'emerald'}
-                            intensity="low"
-                          >
-                            <Card className="h-full">
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-lg">{competitor.name}</CardTitle>
-                                  <Badge variant="outline">{competitor.stage}</Badge>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                                    <div className="text-lg font-bold text-blue-600">
-                                      <AnimatedCounter 
-                                        value={competitor.marketShare} 
-                                        suffix="%" 
-                                        decimals={1}
-                                        duration={1.5 + index * 0.2}
-                                      />
-                                    </div>
-                                    <div className="text-xs text-blue-700">Market Share</div>
-                                  </div>
-                                  <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                                    <div className="text-lg font-bold text-emerald-600">
-                                      {formatCurrency(competitor.revenue)}
-                                    </div>
-                                    <div className="text-xs text-emerald-700">Revenue</div>
-                                  </div>
-                                </div>
-                                
-                                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                                  <div className="text-xl font-bold text-purple-600">
-                                    {formatCurrency(competitor.valuation)}
-                                  </div>
-                                  <div className="text-xs text-purple-700">Valuation</div>
-                                </div>
-                                
-                                <div>
-                                  <h4 className="font-medium text-green-700 mb-2">Strengths</h4>
-                                  <div className="space-y-1">
-                                    {competitor.strengths.map((strength, i) => (
-                                      <div key={i} className="flex items-center text-sm text-green-600">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                        {strength}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <h4 className="font-medium text-red-700 mb-2">Weaknesses</h4>
-                                  <div className="space-y-1">
-                                    {competitor.weaknesses.map((weakness, i) => (
-                                      <div key={i} className="flex items-center text-sm text-red-600">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                                        {weakness}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </GlowingCard>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    {/* Market Share Visualization */}
-                    <GlowingCard glowColor="blue" intensity="medium">
+                    {/* Market Share */}
+                    <GlowingCard glowColor="purple" intensity="medium">
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center">
-                            <PieChart className="w-5 h-5 text-blue-600 mr-2" />
-                            Market Share Distribution
-                            <Badge variant="info" className="ml-2">
-                              <Award className="w-3 h-3 mr-1" />
-                              Competitive Position
+                            <Target className="w-5 h-5 text-purple-600 mr-2" />
+                            Market Share Analysis
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {competitiveData.marketShare.map((company, index) => (
+                              <motion.div 
+                                key={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`border rounded-lg p-4 ${company.company === 'Your Company' ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                    <h4 className="font-semibold text-gray-900">{company.company}</h4>
+                                    {company.company === 'Your Company' && (
+                                      <Badge variant="info">You</Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-bold text-gray-900">
+                                      <AnimatedCounter value={company.share} suffix="%" decimals={2} duration={1.5} />
+                                    </div>
+                                    <div className="text-sm text-gray-600">Market Share</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">Revenue: </span>
+                                    <span className="font-semibold">{formatCurrency(company.revenue)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Growth: </span>
+                                    <span className={`font-semibold ${company.growth > 15 ? 'text-emerald-600' : 'text-gray-900'}`}>
+                                      +{company.growth}%
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <Progress value={company.share} className="mt-3 h-2" />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </GlowingCard>
+
+                    {/* Competitive Advantages */}
+                    <GlowingCard glowColor="emerald" intensity="medium">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            <Award className="w-5 h-5 text-emerald-600 mr-2" />
+                            Competitive Advantages
+                            <Badge variant="success" className="ml-2">
+                              <Star className="w-3 h-3 mr-1" />
+                              Strengths
                             </Badge>
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                              {competitors.map((competitor, index) => (
-                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                  <span className="font-medium text-gray-900">{competitor.name}</span>
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-24">
-                                      <Progress value={competitor.marketShare} className="h-2" />
+                          <div className="space-y-4">
+                            {competitiveData.competitiveAdvantages.map((advantage, index) => (
+                              <motion.div 
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`border rounded-lg p-4 ${getScoreColor(advantage.score)}`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="font-semibold text-gray-900">{advantage.advantage}</h4>
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold">
+                                      <AnimatedCounter value={advantage.score} duration={1.5} />
                                     </div>
-                                    <span className="font-bold text-gray-700 w-12">
-                                      {competitor.marketShare.toFixed(1)}%
-                                    </span>
+                                    <div className="text-xs">Score</div>
                                   </div>
                                 </div>
-                              ))}
-                              
-                              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                                <span className="font-medium text-blue-900">Your Company</span>
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-24">
-                                    <Progress value={marketData.currentMarketShare} className="h-2" />
-                                  </div>
-                                  <span className="font-bold text-blue-700 w-12">
-                                    {marketData.currentMarketShare.toFixed(2)}%
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-                                <span className="font-medium text-gray-700">Others</span>
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-24">
-                                    <Progress 
-                                      value={100 - competitors.reduce((sum, c) => sum + c.marketShare, 0) - marketData.currentMarketShare} 
-                                      className="h-2" 
-                                    />
-                                  </div>
-                                  <span className="font-bold text-gray-700 w-12">
-                                    {(100 - competitors.reduce((sum, c) => sum + c.marketShare, 0) - marketData.currentMarketShare).toFixed(1)}%
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-4">
-                              <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                                <h4 className="font-medium text-emerald-900 mb-3">Competitive Advantages</h4>
-                                <div className="space-y-2 text-sm text-emerald-800">
-                                  <div className="flex items-center space-x-2">
-                                    <Star className="w-4 h-4 text-emerald-600" />
-                                    <span>Modern technology stack</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Star className="w-4 h-4 text-emerald-600" />
-                                    <span>Superior user experience</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Star className="w-4 h-4 text-emerald-600" />
-                                    <span>Competitive pricing model</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Star className="w-4 h-4 text-emerald-600" />
-                                    <span>Faster implementation</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                <h4 className="font-medium text-amber-900 mb-3">Market Opportunities</h4>
-                                <div className="space-y-2 text-sm text-amber-800">
-                                  <div className="flex items-center space-x-2">
-                                    <Target className="w-4 h-4 text-amber-600" />
-                                    <span>Underserved SMB segment</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Target className="w-4 h-4 text-amber-600" />
-                                    <span>International expansion</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Target className="w-4 h-4 text-amber-600" />
-                                    <span>Vertical specialization</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Target className="w-4 h-4 text-amber-600" />
-                                    <span>AI-powered features</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                                <p className="text-sm text-gray-700 mb-3">{advantage.description}</p>
+                                <Progress value={advantage.score} className="h-2" />
+                              </motion.div>
+                            ))}
                           </div>
                         </CardContent>
                       </Card>
@@ -1097,6 +694,51 @@ const MarketSizeAnalysis: React.FC<MarketSizeAnalysisProps> = ({
               </div>
             </Tabs>
           </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* Market Opportunity Summary */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <motion.div variants={itemVariants}>
+          <GlowingCard glowColor="emerald" intensity="high">
+            <div className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl p-8 text-white">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold mb-2">Market Opportunity Summary</h3>
+                <p className="text-emerald-100">Your addressable market opportunity breakdown</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">
+                    <AnimatedCounter value={0.15} suffix="%" decimals={2} duration={2} />
+                  </div>
+                  <div className="text-emerald-100">Current Market Share</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">
+                    <AnimatedCounter value={6} prefix="$" suffix="B" duration={2.2} />
+                  </div>
+                  <div className="text-emerald-100">Addressable Market</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">
+                    <AnimatedCounter value={18.5} suffix="%" decimals={1} duration={2.4} />
+                  </div>
+                  <div className="text-emerald-100">Growth Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">
+                    <AnimatedCounter value={5} suffix=" years" duration={2.6} />
+                  </div>
+                  <div className="text-emerald-100">Time to 1% Share</div>
+                </div>
+              </div>
+            </div>
+          </GlowingCard>
         </motion.div>
       </motion.div>
     </div>
