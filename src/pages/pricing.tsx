@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
@@ -9,6 +9,10 @@ import AnimatedCounter from '../components/advanced/AnimatedCounter';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import MorphingButton from '../components/advanced/MorphingButton';
 import InsightTooltip from '../components/InsightTooltip';
+import { SubscriptionService } from '../lib/subscriptionService';
+import { SubscriptionPlan, BillingCycle } from '../types/subscription';
+import { useAuth } from '../hooks/useAuth';
+import getStripe from '../lib/stripeClient';
 import { 
   ArrowLeft, 
   Check, 
@@ -28,12 +32,33 @@ import {
   TrendingUp,
   FileText,
   Phone,
-  Mail
+  Mail,
+  Loader2
 } from 'lucide-react';
 
 const PricingPage = () => {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const { user } = useAuth();
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      const plansData = await SubscriptionService.getPlans();
+      setPlans(plansData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load plans');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -50,127 +75,116 @@ const PricingPage = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  const plans = [
-    {
-      id: 'free',
-      name: 'Starter',
-      description: 'Perfect for exploring your startup idea',
-      monthlyPrice: 0,
-      yearlyPrice: 0,
-      popular: false,
-      badge: 'Free Forever',
-      badgeColor: 'bg-emerald-100 text-emerald-800',
-      glowColor: 'emerald',
-      features: [
-        '3 startup validations per month',
-        'Basic market analysis',
-        'Competitor research',
-        '10 KPI tracking metrics',
-        'Standard email support',
-        'Basic insights dashboard',
-        'PDF export of reports'
-      ],
-      limitations: [
-        'No VC matching',
-        'No advanced analytics',
-        'No priority support'
-      ],
-      cta: 'Get Started Free',
-      highlight: false
-    },
-    {
-      id: 'pro',
-      name: 'Professional',
-      description: 'For serious entrepreneurs ready to scale',
-      monthlyPrice: 29,
-      yearlyPrice: 24,
-      popular: true,
-      badge: 'Most Popular',
-      badgeColor: 'bg-blue-100 text-blue-800',
-      glowColor: 'blue',
-      features: [
-        'Unlimited startup validations',
-        'Advanced market size analysis',
-        'Comprehensive competitor tracking',
-        'Unlimited KPI metrics',
-        'Priority email & chat support',
-        'Advanced analytics dashboard',
-        'Custom pitch deck builder',
-        'Industry benchmarking',
-        'API access for integrations',
-        'White-label reports'
-      ],
-      limitations: [
-        'No VC matching',
-        'No fundraising tools'
-      ],
-      cta: 'Start Pro Trial',
-      highlight: true,
-      trial: '14-day free trial'
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise',
-      description: 'For VCs and accelerators managing portfolios',
-      monthlyPrice: 99,
-      yearlyPrice: 79,
-      popular: false,
-      badge: 'Full Platform',
-      badgeColor: 'bg-purple-100 text-purple-800',
-      glowColor: 'purple',
-      features: [
-        'Everything in Professional',
-        'VC matching & warm introductions',
-        'Advanced fundraising tools',
-        'Portfolio management dashboard',
-        'SSO & team collaboration',
-        'Dedicated account manager',
-        'Custom integrations',
-        'Advanced security & compliance',
-        'API rate limits removed',
-        'Custom branding options',
-        'Priority phone support',
-        'Quarterly business reviews'
-      ],
-      limitations: [],
-      cta: 'Contact Sales',
-      highlight: false,
-      trial: '30-day free trial'
+  const handlePlanSelect = async (plan: SubscriptionPlan) => {
+    if (!user) {
+      // Redirect to auth
+      window.location.href = '/auth';
+      return;
     }
-  ];
 
-  const handlePlanSelect = async (planId: string) => {
-    setSelectedPlan(planId);
+    setSelectedPlan(plan.id);
     
-    if (planId === 'free') {
-      // Handle free plan signup
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      window.location.href = '/upload';
-    } else if (planId === 'enterprise') {
-      // Handle enterprise contact
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      window.location.href = 'mailto:sales@vcready.com?subject=Enterprise Plan Inquiry';
-    } else {
-      // Handle Stripe checkout for Pro plan
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(`Redirecting to Stripe checkout for ${planId} plan`);
-      // In real implementation, this would redirect to Stripe
+    try {
+      if (plan.price_monthly === 0) {
+        // Handle free plan - just redirect to dashboard
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        window.location.href = '/dashboard';
+        return;
+      }
+
+      if (plan.name === 'Enterprise') {
+        // Handle enterprise contact
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        window.location.href = 'mailto:sales@vcready.com?subject=Enterprise Plan Inquiry';
+        return;
+      }
+
+      // Create Stripe checkout session
+      const checkoutData = await SubscriptionService.createCheckoutSession(
+        plan.id,
+        billingCycle,
+        user.id,
+        `${window.location.origin}/dashboard?success=true`,
+        `${window.location.origin}/pricing?canceled=true`
+      );
+
+      // Redirect to Stripe Checkout
+      const stripe = await getStripe();
+      if (stripe && checkoutData.sessionId) {
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: checkoutData.sessionId,
+        });
+        
+        if (error) {
+          console.error('Stripe checkout error:', error);
+          throw new Error(error.message);
+        }
+      } else if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      // Handle error - show toast or error message
+    } finally {
+      setSelectedPlan(null);
     }
   };
 
-  const getPriceDisplay = (plan: typeof plans[0]) => {
-    const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+  const getPriceDisplay = (plan: SubscriptionPlan) => {
+    const price = billingCycle === 'monthly' ? plan.price_monthly : plan.price_yearly;
     if (price === 0) return 'Free';
     return `$${price}`;
   };
 
-  const getSavingsDisplay = (plan: typeof plans[0]) => {
-    if (plan.monthlyPrice === 0 || billingCycle === 'monthly') return '';
-    const monthlyCost = plan.monthlyPrice * 12;
-    const yearlyCost = plan.yearlyPrice * 12;
+  const getSavingsDisplay = (plan: SubscriptionPlan) => {
+    if (plan.price_monthly === 0 || billingCycle === 'monthly') return '';
+    const monthlyCost = plan.price_monthly * 12;
+    const yearlyCost = plan.price_yearly * 12;
     const savings = Math.round(((monthlyCost - yearlyCost) / monthlyCost) * 100);
     return `Save ${savings}%`;
   };
+
+  const getPlanIcon = (plan: SubscriptionPlan) => {
+    if (plan.name === 'Starter') return Rocket;
+    if (plan.name === 'Professional') return TrendingUp;
+    if (plan.name === 'Enterprise') return Crown;
+    return Building2;
+  };
+
+  const getPlanGlowColor = (plan: SubscriptionPlan) => {
+    if (plan.name === 'Starter') return 'emerald';
+    if (plan.name === 'Professional') return 'blue';
+    if (plan.name === 'Enterprise') return 'purple';
+    return 'blue';
+  };
+
+  const isPopular = (plan: SubscriptionPlan) => {
+    return plan.name === 'Professional';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading pricing plans...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-600 mb-4">Error loading pricing plans</div>
+            <Button onClick={loadPlans}>Try Again</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -201,7 +215,7 @@ const PricingPage = () => {
               <span className="text-sm font-medium text-gray-700">Choose Your Plan</span>
               <Badge variant="success" className="text-xs">
                 <Zap className="w-3 h-3 mr-1" />
-                14-Day Free Trial
+                Free Trial Available
               </Badge>
             </div>
           </motion.div>
@@ -259,129 +273,123 @@ const PricingPage = () => {
           animate="visible"
           variants={containerVariants}
         >
-          {plans.map((plan, index) => (
-            <motion.div key={plan.id} variants={itemVariants}>
-              <InsightTooltip
-                title={plan.name}
-                description={plan.description}
-                insight={`Perfect for ${plan.id === 'free' ? 'early-stage validation' : plan.id === 'pro' ? 'growing startups' : 'enterprise operations'}`}
-                actionable={`${plan.features.length} features included`}
-              >
-                <GlowingCard 
-                  glowColor={plan.glowColor as any}
-                  intensity={plan.highlight ? "high" : "medium"}
-                  className="cursor-help h-full"
+          {plans.map((plan, index) => {
+            const IconComponent = getPlanIcon(plan);
+            const popular = isPopular(plan);
+            
+            return (
+              <motion.div key={plan.id} variants={itemVariants}>
+                <InsightTooltip
+                  title={plan.name}
+                  description={plan.description}
+                  insight={`Perfect for ${plan.name === 'Starter' ? 'early-stage validation' : plan.name === 'Professional' ? 'growing startups' : 'enterprise operations'}`}
+                  actionable={`${plan.features.length} features included`}
                 >
-                  <Card className={`relative h-full ${plan.highlight ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : ''}`}>
-                    {plan.popular && (
-                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-blue-600 text-white px-4 py-1">
-                          <Star className="w-3 h-3 mr-1" />
-                          Most Popular
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    <CardHeader className="text-center pb-8">
-                      <div className="flex items-center justify-center mb-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                          plan.id === 'free' ? 'bg-emerald-100' : 
-                          plan.id === 'pro' ? 'bg-blue-100' : 'bg-purple-100'
-                        }`}>
-                          {plan.id === 'free' ? (
-                            <Rocket className={`w-6 h-6 text-emerald-600`} />
-                          ) : plan.id === 'pro' ? (
-                            <TrendingUp className={`w-6 h-6 text-blue-600`} />
-                          ) : (
-                            <Crown className={`w-6 h-6 text-purple-600`} />
-                          )}
-                        </div>
-                      </div>
-                      
-                      <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                        {plan.name}
-                      </CardTitle>
-                      
-                      <p className="text-gray-600 mb-6">{plan.description}</p>
-                      
-                      <div className="mb-6">
-                        <div className="flex items-baseline justify-center">
-                          <span className="text-5xl font-bold text-gray-900">
-                            {getPriceDisplay(plan)}
-                          </span>
-                          {plan.monthlyPrice > 0 && (
-                            <span className="text-gray-600 ml-2">
-                              /{billingCycle === 'monthly' ? 'month' : 'year'}
-                            </span>
-                          )}
-                        </div>
-                        {getSavingsDisplay(plan) && (
-                          <Badge variant="success" className="mt-2">
-                            {getSavingsDisplay(plan)}
+                  <GlowingCard 
+                    glowColor={getPlanGlowColor(plan) as any}
+                    intensity={popular ? "high" : "medium"}
+                    className="cursor-help h-full"
+                  >
+                    <Card className={`relative h-full ${popular ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : ''}`}>
+                      {popular && (
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                          <Badge className="bg-blue-600 text-white px-4 py-1">
+                            <Star className="w-3 h-3 mr-1" />
+                            Most Popular
                           </Badge>
-                        )}
-                        {plan.trial && (
-                          <p className="text-sm text-blue-600 mt-2 font-medium">
-                            {plan.trial}
-                          </p>
-                        )}
-                      </div>
-
-                      <MorphingButton
-                        variant={plan.highlight ? "gradient" : "outline"}
-                        className={`w-full py-3 ${plan.highlight ? 'hover-glow' : ''}`}
-                        successText={plan.id === 'free' ? "Welcome!" : plan.id === 'enterprise' ? "We'll be in touch!" : "Trial Started!"}
-                        onClick={() => handlePlanSelect(plan.id)}
-                        disabled={selectedPlan === plan.id}
-                      >
-                        {selectedPlan === plan.id ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                            Processing...
+                        </div>
+                      )}
+                      
+                      <CardHeader className="text-center pb-8">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                            plan.name === 'Starter' ? 'bg-emerald-100' : 
+                            plan.name === 'Professional' ? 'bg-blue-100' : 'bg-purple-100'
+                          }`}>
+                            <IconComponent className={`w-6 h-6 ${
+                              plan.name === 'Starter' ? 'text-emerald-600' : 
+                              plan.name === 'Professional' ? 'text-blue-600' : 'text-purple-600'
+                            }`} />
                           </div>
-                        ) : (
-                          plan.cta
-                        )}
-                      </MorphingButton>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0">
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            <Check className="w-4 h-4 text-emerald-600 mr-2" />
-                            What's included:
-                          </h4>
-                          <ul className="space-y-2">
-                            {plan.features.map((feature, featureIndex) => (
-                              <li key={featureIndex} className="flex items-start text-sm text-gray-600">
-                                <Check className="w-4 h-4 text-emerald-600 mr-2 mt-0.5 flex-shrink-0" />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                         
-                        {plan.limitations.length > 0 && (
-                          <div className="border-t border-gray-200 pt-4">
-                            <h5 className="text-sm font-medium text-gray-500 mb-2">Not included:</h5>
-                            <ul className="space-y-1">
-                              {plan.limitations.map((limitation, limitIndex) => (
-                                <li key={limitIndex} className="flex items-start text-sm text-gray-400">
-                                  <span className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-gray-300">×</span>
-                                  {limitation}
+                        <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                          {plan.name}
+                        </CardTitle>
+                        
+                        <p className="text-gray-600 mb-6">{plan.description}</p>
+                        
+                        <div className="mb-6">
+                          <div className="flex items-baseline justify-center">
+                            <span className="text-5xl font-bold text-gray-900">
+                              {getPriceDisplay(plan)}
+                            </span>
+                            {plan.price_monthly > 0 && (
+                              <span className="text-gray-600 ml-2">
+                                /{billingCycle === 'monthly' ? 'month' : 'year'}
+                              </span>
+                            )}
+                          </div>
+                          {getSavingsDisplay(plan) && (
+                            <Badge variant="success" className="mt-2">
+                              {getSavingsDisplay(plan)}
+                            </Badge>
+                          )}
+                          {plan.name === 'Professional' && (
+                            <p className="text-sm text-blue-600 mt-2 font-medium">
+                              14-day free trial
+                            </p>
+                          )}
+                          {plan.name === 'Enterprise' && (
+                            <p className="text-sm text-purple-600 mt-2 font-medium">
+                              30-day free trial
+                            </p>
+                          )}
+                        </div>
+
+                        <MorphingButton
+                          variant={popular ? "gradient" : "outline"}
+                          className={`w-full py-3 ${popular ? 'hover-glow' : ''}`}
+                          successText={plan.price_monthly === 0 ? "Welcome!" : plan.name === 'Enterprise' ? "We'll be in touch!" : "Starting trial..."}
+                          onClick={() => handlePlanSelect(plan)}
+                          disabled={selectedPlan === plan.id}
+                        >
+                          {selectedPlan === plan.id ? (
+                            <div className="flex items-center">
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Processing...
+                            </div>
+                          ) : (
+                            plan.price_monthly === 0 ? 'Get Started Free' :
+                            plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'
+                          )}
+                        </MorphingButton>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-0">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                              <Check className="w-4 h-4 text-emerald-600 mr-2" />
+                              What's included:
+                            </h4>
+                            <ul className="space-y-2">
+                              {plan.features.map((feature, featureIndex) => (
+                                <li key={featureIndex} className="flex items-start text-sm text-gray-600">
+                                  <Check className="w-4 h-4 text-emerald-600 mr-2 mt-0.5 flex-shrink-0" />
+                                  {feature}
                                 </li>
                               ))}
                             </ul>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </GlowingCard>
-              </InsightTooltip>
-            </motion.div>
-          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </GlowingCard>
+                </InsightTooltip>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Feature Comparison */}
@@ -411,29 +419,55 @@ const PricingPage = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-4 px-4 font-medium text-gray-900">Features</th>
-                          <th className="text-center py-4 px-4 font-medium text-gray-900">Starter</th>
-                          <th className="text-center py-4 px-4 font-medium text-gray-900">Professional</th>
-                          <th className="text-center py-4 px-4 font-medium text-gray-900">Enterprise</th>
+                          {plans.map(plan => (
+                            <th key={plan.id} className="text-center py-4 px-4 font-medium text-gray-900">
+                              {plan.name}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {[
-                          { feature: 'Startup Validations', starter: '3/month', pro: 'Unlimited', enterprise: 'Unlimited' },
-                          { feature: 'KPI Tracking', starter: '10 metrics', pro: 'Unlimited', enterprise: 'Unlimited' },
-                          { feature: 'Market Analysis', starter: 'Basic', pro: 'Advanced', enterprise: 'Advanced' },
-                          { feature: 'Competitor Research', starter: 'Standard', pro: 'Comprehensive', enterprise: 'Comprehensive' },
-                          { feature: 'Pitch Deck Builder', starter: '❌', pro: '✅', enterprise: '✅' },
-                          { feature: 'VC Matching', starter: '❌', pro: '❌', enterprise: '✅' },
-                          { feature: 'API Access', starter: '❌', pro: '✅', enterprise: '✅' },
-                          { feature: 'Priority Support', starter: '❌', pro: '✅', enterprise: '✅' },
-                          { feature: 'SSO & Teams', starter: '❌', pro: '❌', enterprise: '✅' },
-                          { feature: 'Custom Integrations', starter: '❌', pro: '❌', enterprise: '✅' }
+                          { 
+                            feature: 'Startup Validations', 
+                            values: plans.map(p => p.max_validations_monthly ? `${p.max_validations_monthly}/month` : 'Unlimited')
+                          },
+                          { 
+                            feature: 'Companies', 
+                            values: plans.map(p => p.max_companies ? `${p.max_companies}` : 'Unlimited')
+                          },
+                          { 
+                            feature: 'KPI Reports', 
+                            values: plans.map(p => p.max_kpi_reports ? `${p.max_kpi_reports}` : 'Unlimited')
+                          },
+                          { 
+                            feature: 'VC Matching', 
+                            values: plans.map(p => p.vc_matching_enabled ? '✅' : '❌')
+                          },
+                          { 
+                            feature: 'API Access', 
+                            values: plans.map(p => p.api_access ? '✅' : '❌')
+                          },
+                          { 
+                            feature: 'Priority Support', 
+                            values: plans.map(p => p.priority_support ? '✅' : '❌')
+                          },
+                          { 
+                            feature: 'SSO & Teams', 
+                            values: plans.map(p => p.sso_enabled ? '✅' : '❌')
+                          },
+                          { 
+                            feature: 'Custom Integrations', 
+                            values: plans.map(p => p.custom_integrations ? '✅' : '❌')
+                          }
                         ].map((row, index) => (
                           <tr key={index} className="border-b border-gray-100">
                             <td className="py-3 px-4 text-gray-700">{row.feature}</td>
-                            <td className="py-3 px-4 text-center text-gray-600">{row.starter}</td>
-                            <td className="py-3 px-4 text-center text-gray-600">{row.pro}</td>
-                            <td className="py-3 px-4 text-center text-gray-600">{row.enterprise}</td>
+                            {row.values.map((value, valueIndex) => (
+                              <td key={valueIndex} className="py-3 px-4 text-center text-gray-600">
+                                {value}
+                              </td>
+                            ))}
                           </tr>
                         ))}
                       </tbody>
@@ -468,23 +502,23 @@ const PricingPage = () => {
               },
               {
                 question: "What payment methods do you accept?",
-                answer: "We accept all major credit cards (Visa, Mastercard, American Express) and support international payments."
+                answer: "We accept all major credit cards (Visa, Mastercard, American Express) and support international payments through Stripe."
               },
               {
                 question: "Is there a free trial?",
-                answer: "Yes! Pro and Enterprise plans come with 14-day and 30-day free trials respectively. No credit card required."
+                answer: "Yes! Pro plans come with a 14-day free trial, and Enterprise plans include a 30-day free trial. No credit card required to start."
               },
               {
                 question: "What happens to my data if I cancel?",
-                answer: "Your data is safely stored for 90 days after cancellation. You can export all your reports and data anytime."
+                answer: "Your data is safely stored for 90 days after cancellation. You can export all your reports and data anytime during this period."
               },
               {
                 question: "Do you offer refunds?",
-                answer: "We offer a 30-day money-back guarantee for all paid plans. Contact support for assistance."
+                answer: "We offer a 30-day money-back guarantee for all paid plans. Contact our support team for assistance with refunds."
               },
               {
                 question: "Can I get a custom Enterprise plan?",
-                answer: "Absolutely! Contact our sales team to discuss custom features, pricing, and implementation support."
+                answer: "Absolutely! Contact our sales team to discuss custom features, pricing, and implementation support tailored to your needs."
               }
             ].map((faq, index) => (
               <motion.div key={index} variants={itemVariants}>
@@ -523,8 +557,11 @@ const PricingPage = () => {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <MorphingButton 
                       className="bg-white text-blue-600 hover:bg-gray-50 text-lg px-8 py-4 hover-glow"
-                      successText="Trial Started!"
-                      onClick={() => handlePlanSelect('pro')}
+                      successText="Starting trial..."
+                      onClick={() => {
+                        const proPlan = plans.find(p => p.name === 'Professional');
+                        if (proPlan) handlePlanSelect(proPlan);
+                      }}
                     >
                       <Rocket className="w-5 h-5 mr-2" />
                       Start Free Trial
