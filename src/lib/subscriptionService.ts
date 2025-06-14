@@ -6,33 +6,43 @@ export class SubscriptionService {
    * Get all available subscription plans
    */
   static async getPlans(): Promise<SubscriptionPlan[]> {
-    const { data, error } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order');
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
 
-    if (error) {
-      console.error('Error fetching subscription plans:', error);
-      throw new Error('Failed to fetch subscription plans');
+      if (error) {
+        console.error('Error fetching subscription plans:', error);
+        throw new Error(`Failed to fetch subscription plans: ${error.message}`);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('SubscriptionService.getPlans error:', error);
+      throw error;
     }
-
-    return data || [];
   }
 
   /**
    * Get current user's subscription with plan details
    */
   static async getCurrentSubscription(userId: string) {
-    const { data, error } = await supabase
-      .rpc('get_user_subscription_with_plan', { p_user_id: userId });
+    try {
+      const { data, error } = await supabase
+        .rpc('get_user_subscription_with_plan', { p_user_id: userId });
 
-    if (error) {
-      console.error('Error fetching user subscription:', error);
-      throw new Error('Failed to fetch user subscription');
+      if (error) {
+        console.error('Error fetching user subscription:', error);
+        throw new Error(`Failed to fetch user subscription: ${error.message}`);
+      }
+
+      return data?.[0] || null;
+    } catch (error) {
+      console.error('SubscriptionService.getCurrentSubscription error:', error);
+      throw error;
     }
-
-    return data?.[0] || null;
   }
 
   /**
@@ -46,6 +56,8 @@ export class SubscriptionService {
     cancelUrl: string
   ) {
     try {
+      console.log('Creating checkout session:', { planId, billingCycle, userId });
+
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           planId,
@@ -57,13 +69,14 @@ export class SubscriptionService {
       });
 
       if (error) {
-        throw error;
+        console.error('Checkout session error:', error);
+        throw new Error(`Failed to create checkout session: ${error.message}`);
       }
 
       return data;
     } catch (error) {
-      console.error('Error creating checkout session:', error);
-      throw new Error('Failed to create checkout session');
+      console.error('SubscriptionService.createCheckoutSession error:', error);
+      throw error;
     }
   }
 
@@ -80,13 +93,14 @@ export class SubscriptionService {
       });
 
       if (error) {
-        throw error;
+        console.error('Portal session error:', error);
+        throw new Error(`Failed to create portal session: ${error.message}`);
       }
 
       return data;
     } catch (error) {
-      console.error('Error creating portal session:', error);
-      throw new Error('Failed to create portal session');
+      console.error('SubscriptionService.createPortalSession error:', error);
+      throw error;
     }
   }
 
@@ -94,63 +108,78 @@ export class SubscriptionService {
    * Check feature limit for user
    */
   static async checkFeatureLimit(userId: string, featureName: string): Promise<FeatureLimit> {
-    const { data, error } = await supabase
-      .rpc('check_feature_limit', {
-        p_user_id: userId,
-        p_feature_name: featureName
-      });
+    try {
+      const { data, error } = await supabase
+        .rpc('check_feature_limit', {
+          p_user_id: userId,
+          p_feature_name: featureName
+        });
 
-    if (error) {
-      console.error('Error checking feature limit:', error);
-      throw new Error('Failed to check feature limit');
+      if (error) {
+        console.error('Error checking feature limit:', error);
+        throw new Error(`Failed to check feature limit: ${error.message}`);
+      }
+
+      return data?.[0] || { allowed: false, current_usage: 0, limit_value: 0, unlimited: false };
+    } catch (error) {
+      console.error('SubscriptionService.checkFeatureLimit error:', error);
+      throw error;
     }
-
-    return data?.[0] || { allowed: false, current_usage: 0, limit_value: 0, unlimited: false };
   }
 
   /**
    * Track feature usage
    */
   static async trackFeatureUsage(userId: string, featureName: string, increment: number = 1): Promise<boolean> {
-    const { data, error } = await supabase
-      .rpc('track_feature_usage', {
-        p_user_id: userId,
-        p_feature_name: featureName,
-        p_increment: increment
-      });
+    try {
+      const { data, error } = await supabase
+        .rpc('track_feature_usage', {
+          p_user_id: userId,
+          p_feature_name: featureName,
+          p_increment: increment
+        });
 
-    if (error) {
-      console.error('Error tracking feature usage:', error);
+      if (error) {
+        console.error('Error tracking feature usage:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('SubscriptionService.trackFeatureUsage error:', error);
       return false;
     }
-
-    return data || false;
   }
 
   /**
    * Get feature usage for current month
    */
   static async getFeatureUsage(userId: string, featureName?: string) {
-    const currentMonth = new Date().toISOString().slice(0, 7) + '-01'; // YYYY-MM-01
+    try {
+      const currentMonth = new Date().toISOString().slice(0, 7) + '-01'; // YYYY-MM-01
 
-    let query = supabase
-      .from('feature_usage')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('period_start', currentMonth);
+      let query = supabase
+        .from('feature_usage')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('period_start', currentMonth);
 
-    if (featureName) {
-      query = query.eq('feature_name', featureName);
+      if (featureName) {
+        query = query.eq('feature_name', featureName);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching feature usage:', error);
+        throw new Error(`Failed to fetch feature usage: ${error.message}`);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('SubscriptionService.getFeatureUsage error:', error);
+      throw error;
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching feature usage:', error);
-      throw new Error('Failed to fetch feature usage');
-    }
-
-    return data || [];
   }
 
   /**
@@ -163,13 +192,14 @@ export class SubscriptionService {
       });
 
       if (error) {
-        throw error;
+        console.error('Cancel subscription error:', error);
+        throw new Error(`Failed to cancel subscription: ${error.message}`);
       }
 
       return data;
     } catch (error) {
-      console.error('Error canceling subscription:', error);
-      throw new Error('Failed to cancel subscription');
+      console.error('SubscriptionService.cancelSubscription error:', error);
+      throw error;
     }
   }
 
@@ -183,13 +213,14 @@ export class SubscriptionService {
       });
 
       if (error) {
-        throw error;
+        console.error('Resume subscription error:', error);
+        throw new Error(`Failed to resume subscription: ${error.message}`);
       }
 
       return data;
     } catch (error) {
-      console.error('Error resuming subscription:', error);
-      throw new Error('Failed to resume subscription');
+      console.error('SubscriptionService.resumeSubscription error:', error);
+      throw error;
     }
   }
 }
