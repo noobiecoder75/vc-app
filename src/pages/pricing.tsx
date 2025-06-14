@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,10 +9,6 @@ import AnimatedCounter from '../components/advanced/AnimatedCounter';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import MorphingButton from '../components/advanced/MorphingButton';
 import InsightTooltip from '../components/InsightTooltip';
-import { SubscriptionService } from '../lib/subscriptionService';
-import { SubscriptionPlan, BillingCycle } from '../types/subscription';
-import { useAuth } from '../hooks/useAuth';
-import getStripe from '../lib/stripeClient';
 import { 
   ArrowLeft, 
   Check, 
@@ -36,29 +32,93 @@ import {
   Loader2
 } from 'lucide-react';
 
+// Mock subscription plans since Stripe isn't set up yet
+const mockPlans = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfect for validating your startup idea',
+    price_monthly: 0,
+    price_yearly: 0,
+    features: [
+      '3 startup validations per month',
+      'Basic market analysis',
+      'Competitor research',
+      'Email support',
+      'Community access'
+    ],
+    max_companies: 3,
+    max_validations_monthly: 3,
+    max_kpi_reports: 10,
+    vc_matching_enabled: false,
+    sso_enabled: false,
+    priority_support: false,
+    api_access: false,
+    custom_integrations: false,
+    is_active: true,
+    sort_order: 1
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    description: 'For growing startups ready to scale',
+    price_monthly: 29,
+    price_yearly: 24,
+    features: [
+      'Unlimited startup validations',
+      'Advanced market analysis',
+      'Detailed competitor insights',
+      'KPI tracking & benchmarks',
+      'Pitch deck builder',
+      'Priority email support',
+      '14-day free trial'
+    ],
+    max_companies: null,
+    max_validations_monthly: null,
+    max_kpi_reports: null,
+    vc_matching_enabled: true,
+    sso_enabled: false,
+    priority_support: true,
+    api_access: false,
+    custom_integrations: false,
+    is_active: true,
+    sort_order: 2
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'For VCs, accelerators, and large teams',
+    price_monthly: 99,
+    price_yearly: 79,
+    features: [
+      'Everything in Professional',
+      'Advanced VC matching',
+      'Team collaboration tools',
+      'SSO & user management',
+      'Custom integrations',
+      'Dedicated account manager',
+      'Phone & priority support',
+      '30-day free trial'
+    ],
+    max_companies: null,
+    max_validations_monthly: null,
+    max_kpi_reports: null,
+    vc_matching_enabled: true,
+    sso_enabled: true,
+    priority_support: true,
+    api_access: true,
+    custom_integrations: true,
+    is_active: true,
+    sort_order: 3
+  }
+];
+
 const PricingPage = () => {
-  const { user } = useAuth();
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadPlans();
-  }, []);
-
-  const loadPlans = async () => {
-    try {
-      setLoading(true);
-      const plansData = await SubscriptionService.getPlans();
-      setPlans(plansData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load plans');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [plans] = useState(mockPlans);
+  const [loading, setLoading] = useState(false);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -75,68 +135,41 @@ const PricingPage = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  const handlePlanSelect = async (plan: SubscriptionPlan) => {
-    if (!user) {
-      // Redirect to auth
-      window.location.href = '/auth';
-      return;
-    }
-
+  const handlePlanSelect = async (plan: typeof mockPlans[0]) => {
     setSelectedPlan(plan.id);
+    setLoading(true);
     
     try {
+      // Simulate loading for UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       if (plan.price_monthly === 0) {
-        // Handle free plan - just redirect to dashboard
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        window.location.href = '/dashboard';
-        return;
-      }
-
-      if (plan.name === 'Enterprise') {
-        // Handle enterprise contact
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        window.location.href = 'mailto:sales@vcready.com?subject=Enterprise Plan Inquiry';
-        return;
-      }
-
-      // Create Stripe checkout session
-      const checkoutData = await SubscriptionService.createCheckoutSession(
-        plan.id,
-        billingCycle,
-        user.id,
-        `${window.location.origin}/dashboard?success=true`,
-        `${window.location.origin}/pricing?canceled=true`
-      );
-
-      // Redirect to Stripe Checkout
-      const stripe = await getStripe();
-      if (stripe && checkoutData.sessionId) {
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: checkoutData.sessionId,
-        });
-        
-        if (error) {
-          console.error('Stripe checkout error:', error);
-          throw new Error(error.message);
-        }
-      } else if (checkoutData.url) {
-        window.location.href = checkoutData.url;
+        // Free plan - navigate to upload page
+        navigate('/upload');
+      } else if (plan.name === 'Enterprise') {
+        // Enterprise plan - simulate contact redirect
+        window.open('mailto:sales@vcready.com?subject=Enterprise Plan Inquiry', '_blank');
+        setSelectedPlan(null);
+        setLoading(false);
+      } else {
+        // Paid plans - for now just navigate to dashboard
+        // In the future, this will integrate with Stripe
+        navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Error creating checkout session:', error);
-      // Handle error - show toast or error message
-    } finally {
+      console.error('Error selecting plan:', error);
       setSelectedPlan(null);
+      setLoading(false);
     }
   };
 
-  const getPriceDisplay = (plan: SubscriptionPlan) => {
+  const getPriceDisplay = (plan: typeof mockPlans[0]) => {
     const price = billingCycle === 'monthly' ? plan.price_monthly : plan.price_yearly;
     if (price === 0) return 'Free';
     return `$${price}`;
   };
 
-  const getSavingsDisplay = (plan: SubscriptionPlan) => {
+  const getSavingsDisplay = (plan: typeof mockPlans[0]) => {
     if (plan.price_monthly === 0 || billingCycle === 'monthly') return '';
     const monthlyCost = plan.price_monthly * 12;
     const yearlyCost = plan.price_yearly * 12;
@@ -144,47 +177,23 @@ const PricingPage = () => {
     return `Save ${savings}%`;
   };
 
-  const getPlanIcon = (plan: SubscriptionPlan) => {
+  const getPlanIcon = (plan: typeof mockPlans[0]) => {
     if (plan.name === 'Starter') return Rocket;
     if (plan.name === 'Professional') return TrendingUp;
     if (plan.name === 'Enterprise') return Crown;
     return Building2;
   };
 
-  const getPlanGlowColor = (plan: SubscriptionPlan) => {
+  const getPlanGlowColor = (plan: typeof mockPlans[0]) => {
     if (plan.name === 'Starter') return 'emerald';
     if (plan.name === 'Professional') return 'blue';
     if (plan.name === 'Enterprise') return 'purple';
     return 'blue';
   };
 
-  const isPopular = (plan: SubscriptionPlan) => {
+  const isPopular = (plan: typeof mockPlans[0]) => {
     return plan.name === 'Professional';
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading pricing plans...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-red-600 mb-4">Error loading pricing plans</div>
-            <Button onClick={loadPlans}>Try Again</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -352,7 +361,7 @@ const PricingPage = () => {
                           className={`w-full py-3 ${popular ? 'hover-glow' : ''}`}
                           successText={plan.price_monthly === 0 ? "Welcome!" : plan.name === 'Enterprise' ? "We'll be in touch!" : "Starting trial..."}
                           onClick={() => handlePlanSelect(plan)}
-                          disabled={selectedPlan === plan.id}
+                          disabled={selectedPlan === plan.id || loading}
                         >
                           {selectedPlan === plan.id ? (
                             <div className="flex items-center">
@@ -477,62 +486,6 @@ const PricingPage = () => {
               </Card>
             </GlowingCard>
           </motion.div>
-        </motion.div>
-
-        {/* FAQ Section */}
-        <motion.div 
-          className="mb-16"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          <motion.div variants={itemVariants}>
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
-              <p className="text-gray-600">Everything you need to know about our pricing and plans</p>
-            </div>
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[
-              {
-                question: "Can I change plans anytime?",
-                answer: "Yes! You can upgrade or downgrade your plan at any time. Changes are prorated and take effect immediately."
-              },
-              {
-                question: "What payment methods do you accept?",
-                answer: "We accept all major credit cards (Visa, Mastercard, American Express) and support international payments through Stripe."
-              },
-              {
-                question: "Is there a free trial?",
-                answer: "Yes! Pro plans come with a 14-day free trial, and Enterprise plans include a 30-day free trial. No credit card required to start."
-              },
-              {
-                question: "What happens to my data if I cancel?",
-                answer: "Your data is safely stored for 90 days after cancellation. You can export all your reports and data anytime during this period."
-              },
-              {
-                question: "Do you offer refunds?",
-                answer: "We offer a 30-day money-back guarantee for all paid plans. Contact our support team for assistance with refunds."
-              },
-              {
-                question: "Can I get a custom Enterprise plan?",
-                answer: "Absolutely! Contact our sales team to discuss custom features, pricing, and implementation support tailored to your needs."
-              }
-            ].map((faq, index) => (
-              <motion.div key={index} variants={itemVariants}>
-                <GlowingCard glowColor="blue" intensity="low">
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="font-semibold text-gray-900 mb-2">{faq.question}</h3>
-                      <p className="text-gray-600 text-sm">{faq.answer}</p>
-                    </CardContent>
-                  </Card>
-                </GlowingCard>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
 
         {/* CTA Section */}

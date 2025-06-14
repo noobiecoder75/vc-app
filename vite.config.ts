@@ -10,6 +10,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
+    hmr: {
+      overlay: false, // Disable error overlay temporarily
+    }
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
