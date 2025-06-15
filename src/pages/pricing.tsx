@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -33,21 +33,57 @@ import {
   FileText,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 
 const PricingPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if we're returning from auth
+  const authSuccess = searchParams.get('auth') === 'success';
+
   useEffect(() => {
     loadPlans();
   }, []);
+
+  // Handle auth success and plan selection
+  useEffect(() => {
+    if (authSuccess && user) {
+      console.log('✅ Auth successful, checking for selected plan...');
+      const selectedPlanData = localStorage.getItem('selectedPlan');
+      
+      if (selectedPlanData) {
+        try {
+          const { planId, billingCycle: savedBillingCycle } = JSON.parse(selectedPlanData);
+          const plan = plans.find(p => p.id === planId);
+          
+          if (plan) {
+            console.log('🎯 Resuming plan selection for:', plan.name);
+            setBillingCycle(savedBillingCycle);
+            
+            // Auto-trigger plan selection
+            setTimeout(() => {
+              handlePlanSelect(plan);
+            }, 1000);
+          }
+          
+          // Clear the stored plan
+          localStorage.removeItem('selectedPlan');
+        } catch (error) {
+          console.error('❌ Error parsing stored plan:', error);
+          localStorage.removeItem('selectedPlan');
+        }
+      }
+    }
+  }, [authSuccess, user, plans]);
 
   const loadPlans = async () => {
     try {
@@ -82,6 +118,7 @@ const PricingPage = () => {
     if (!user) {
       // Save the selected plan and redirect to sign up
       localStorage.setItem('selectedPlan', JSON.stringify({ planId: plan.id, billingCycle }));
+      console.log('💾 Saved plan selection, redirecting to auth');
       navigate('/auth?redirect=pricing');
       return;
     }
@@ -227,6 +264,21 @@ const PricingPage = () => {
               </Badge>
             </div>
           </motion.div>
+
+          {/* Auth Success Message */}
+          {authSuccess && (
+            <motion.div 
+              variants={itemVariants}
+              className="mb-6"
+            >
+              <div className="inline-flex items-center space-x-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-700">
+                  Welcome! Complete your plan selection below.
+                </span>
+              </div>
+            </motion.div>
+          )}
           
           <motion.h1 
             className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6"
@@ -358,9 +410,9 @@ const PricingPage = () => {
                         <MorphingButton
                           variant={popular ? "gradient" : "outline"}
                           className={`w-full py-3 ${popular ? 'hover-glow' : ''}`}
+                          disabled={selectedPlan === plan.id}
                           successText={plan.price_monthly === 0 ? "Welcome!" : plan.name === 'Enterprise' ? "We'll be in touch!" : "Starting trial..."}
                           onClick={() => handlePlanSelect(plan)}
-                          disabled={selectedPlan === plan.id}
                         >
                           {selectedPlan === plan.id ? (
                             <div className="flex items-center">
