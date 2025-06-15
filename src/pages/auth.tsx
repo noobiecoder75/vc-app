@@ -530,4 +530,3 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
-</action>
