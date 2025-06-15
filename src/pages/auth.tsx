@@ -114,23 +114,12 @@ const AuthPage = () => {
     setSuccess('');
 
     try {
-      const validPath = getValidRedirectPath(redirectTo);
-      const baseUrl = window.location.origin;
-      
-      // Create the correct redirect URL - this is where Supabase will send the user after OAuth
-      let redirectUrl = `${baseUrl}/${validPath}`;
-      
-      // For pricing page, include auth success parameter to handle plan selection
-      if (validPath === 'pricing') {
-        redirectUrl = `${baseUrl}/pricing?auth=success`;
-      }
-      
-      console.log('🔄 Starting Google OAuth with redirect URL:', redirectUrl);
+      console.log('🔄 Starting Google OAuth...');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
+          redirectTo: window.location.origin + '/auth',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -155,10 +144,8 @@ const AuthPage = () => {
       // Provide more specific error messages
       if (error.message?.includes('Invalid login credentials')) {
         setError('Unable to sign in with Google. Please check your Google account settings.');
-      } else if (error.message?.includes('OAUTH_CONFIGURATION_NOT_FOUND')) {
-        setError('Google sign-in is not properly configured. Please contact support.');
-      } else if (error.message?.includes('redirectTo')) {
-        setError('OAuth redirect configuration error. Please contact support.');
+      } else if (error.message?.includes('OAuth provider not enabled')) {
+        setError('Google sign-in is not enabled. Please contact support.');
       } else {
         setError(error.message || 'Failed to sign in with Google. Please try again or use email/password.');
       }
@@ -187,8 +174,7 @@ const AuthPage = () => {
             data: {
               first_name: formData.firstName,
               last_name: formData.lastName,
-            },
-            emailRedirectTo: `${window.location.origin}/${validPath}`
+            }
           }
         });
 

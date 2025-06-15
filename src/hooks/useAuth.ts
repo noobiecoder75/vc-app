@@ -39,7 +39,55 @@ export function useAuth() {
       }
     };
 
-    getInitialSession();
+    // Check for OAuth callback parameters in URL
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get('access_token');
+      const refreshToken = urlParams.get('refresh_token');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+
+      if (error) {
+        console.error('❌ OAuth callback error:', error, errorDescription);
+        setError(errorDescription || error);
+        return;
+      }
+
+      if (accessToken) {
+        console.log('🔄 Processing OAuth callback...');
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ''
+          });
+
+          if (error) {
+            console.error('❌ Error setting session from OAuth:', error);
+            setError(error.message);
+          } else {
+            console.log('✅ OAuth session established successfully');
+            setSession(data.session);
+            setUser(data.session?.user || null);
+            setLoading(false);
+            
+            // Clean up URL parameters
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+            return;
+          }
+        } catch (err) {
+          console.error('💥 OAuth session error:', err);
+          setError(err instanceof Error ? err.message : 'OAuth session error');
+        }
+      }
+    };
+
+    // Handle OAuth callback first, then get session
+    handleOAuthCallback().then(() => {
+      if (!window.location.search.includes('access_token')) {
+        getInitialSession();
+      }
+    });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -68,6 +116,9 @@ export function useAuth() {
               break;
             case 'PASSWORD_RECOVERY':
               console.log('🔑 Password recovery initiated');
+              break;
+            case 'INITIAL_SESSION':
+              console.log('🏁 Initial session loaded');
               break;
             default:
               console.log('📝 Auth event:', event);
