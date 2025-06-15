@@ -39,55 +39,7 @@ export function useAuth() {
       }
     };
 
-    // Check for OAuth callback parameters in URL
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const accessToken = urlParams.get('access_token');
-      const refreshToken = urlParams.get('refresh_token');
-      const error = urlParams.get('error');
-      const errorDescription = urlParams.get('error_description');
-
-      if (error) {
-        console.error('❌ OAuth callback error:', error, errorDescription);
-        setError(errorDescription || error);
-        return;
-      }
-
-      if (accessToken) {
-        console.log('🔄 Processing OAuth callback...');
-        try {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || ''
-          });
-
-          if (error) {
-            console.error('❌ Error setting session from OAuth:', error);
-            setError(error.message);
-          } else {
-            console.log('✅ OAuth session established successfully');
-            setSession(data.session);
-            setUser(data.session?.user || null);
-            setLoading(false);
-            
-            // Clean up URL parameters
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-            return;
-          }
-        } catch (err) {
-          console.error('💥 OAuth session error:', err);
-          setError(err instanceof Error ? err.message : 'OAuth session error');
-        }
-      }
-    };
-
-    // Handle OAuth callback first, then get session
-    handleOAuthCallback().then(() => {
-      if (!window.location.search.includes('access_token')) {
-        getInitialSession();
-      }
-    });
+    getInitialSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -97,16 +49,22 @@ export function useAuth() {
         if (mounted) {
           setSession(session);
           setUser(session?.user || null);
-          setLoading(false);
           setError(null);
+
+          // Only set loading to false after we've processed the auth change
+          if (event !== 'INITIAL_SESSION') {
+            setLoading(false);
+          }
 
           // Handle specific auth events
           switch (event) {
             case 'SIGNED_IN':
               console.log('✅ User signed in successfully');
+              setLoading(false);
               break;
             case 'SIGNED_OUT':
               console.log('👋 User signed out');
+              setLoading(false);
               break;
             case 'TOKEN_REFRESHED':
               console.log('🔄 Token refreshed');
@@ -118,10 +76,12 @@ export function useAuth() {
               console.log('🔑 Password recovery initiated');
               break;
             case 'INITIAL_SESSION':
-              console.log('🏁 Initial session loaded');
+              console.log('🏁 Initial session processed');
+              setLoading(false);
               break;
             default:
               console.log('📝 Auth event:', event);
+              setLoading(false);
           }
         }
       }

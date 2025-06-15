@@ -116,10 +116,14 @@ const AuthPage = () => {
     try {
       console.log('🔄 Starting Google OAuth...');
       
+      // Build the redirect URL properly
+      const baseUrl = window.location.origin;
+      const redirectUrl = `${baseUrl}/auth${redirectTo !== 'dashboard' ? `?redirect=${redirectTo}` : ''}`;
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth',
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -145,9 +149,9 @@ const AuthPage = () => {
       if (error.message?.includes('Invalid login credentials')) {
         setError('Unable to sign in with Google. Please check your Google account settings.');
       } else if (error.message?.includes('OAuth provider not enabled')) {
-        setError('Google sign-in is not enabled. Please contact support.');
+        setError('Google sign-in is not configured. Please use email/password instead.');
       } else {
-        setError(error.message || 'Failed to sign in with Google. Please try again or use email/password.');
+        setError(error.message || 'Failed to sign in with Google. Please try email/password instead.');
       }
       
       setGoogleLoading(false);
