@@ -23,7 +23,6 @@ const AuthPage = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  const [oauthCallbackHandled, setOauthCallbackHandled] = useState(false);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -34,9 +33,6 @@ const AuthPage = () => {
   });
 
   const redirectTo = searchParams.get('redirect') || 'dashboard';
-  const authSuccess = searchParams.get('auth') === 'success';
-  const accessToken = searchParams.get('access_token');
-  const refreshToken = searchParams.get('refresh_token');
 
   // Helper function to get valid redirect path
   const getValidRedirectPath = (redirect: string): string => {
@@ -44,76 +40,24 @@ const AuthPage = () => {
     return validPaths.includes(redirect) ? redirect : 'dashboard';
   };
 
-  // Handle OAuth callback
+  // Redirect authenticated users
   useEffect(() => {
-    const handleOAuthCallback = async () => {
-      if (oauthCallbackHandled) return;
-
-      // Check if this is an OAuth callback
-      if (accessToken || authSuccess) {
-        console.log('🔄 Handling OAuth callback...');
-        setOauthCallbackHandled(true);
-        setSuccess('Authentication successful! Redirecting...');
-        
-        try {
-          // If we have tokens in URL, let Supabase handle them
-          if (accessToken && refreshToken) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (error) {
-              console.error('❌ Error setting session:', error);
-              setError('Authentication failed. Please try again.');
-              return;
-            }
-
-            console.log('✅ Session set successfully:', data);
-          }
-
-          // Wait a moment for session to be established
-          setTimeout(() => {
-            const validPath = getValidRedirectPath(redirectTo);
-            console.log(`🚀 Redirecting to: /${validPath}`);
-            
-            // Handle special cases for pricing with selected plan
-            if (validPath === 'pricing') {
-              const selectedPlan = localStorage.getItem('selectedPlan');
-              if (selectedPlan) {
-                navigate('/pricing?auth=success');
-              } else {
-                navigate('/pricing');
-              }
-            } else {
-              navigate(`/${validPath}`);
-            }
-          }, 1500);
-        } catch (error) {
-          console.error('💥 OAuth callback error:', error);
-          setError('Authentication failed. Please try again.');
-        }
-      }
-    };
-
-    handleOAuthCallback();
-  }, [accessToken, refreshToken, authSuccess, redirectTo, navigate, oauthCallbackHandled]);
-
-  // Redirect if user is already authenticated (but not during OAuth callback)
-  useEffect(() => {
-    if (user && !authLoading && !oauthCallbackHandled && !accessToken && !authSuccess) {
-      console.log('👤 User already authenticated, redirecting...');
+    if (user && !authLoading) {
+      console.log('👤 User authenticated, redirecting...');
       const validPath = getValidRedirectPath(redirectTo);
       
-      // Check for pending plan selection
-      const selectedPlan = localStorage.getItem('selectedPlan');
-      if (selectedPlan && validPath === 'pricing') {
-        navigate('/pricing');
-      } else {
-        navigate(`/${validPath}`);
+      // Handle special case for pricing with plan selection
+      if (validPath === 'pricing') {
+        const selectedPlan = localStorage.getItem('selectedPlan');
+        if (selectedPlan) {
+          navigate('/pricing?auth=success');
+          return;
+        }
       }
+      
+      navigate(`/${validPath}`);
     }
-  }, [user, authLoading, navigate, redirectTo, oauthCallbackHandled, accessToken, authSuccess]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -173,10 +117,15 @@ const AuthPage = () => {
       const validPath = getValidRedirectPath(redirectTo);
       const baseUrl = window.location.origin;
       
-      // Create the redirect URL with proper OAuth callback handling
-      const redirectUrl = `${baseUrl}/auth?auth=success&redirect=${validPath}`;
+      // Create the correct redirect URL - this is where Supabase will send the user after OAuth
+      let redirectUrl = `${baseUrl}/${validPath}`;
       
-      console.log('🔄 Starting Google OAuth with redirect:', redirectUrl);
+      // For pricing page, include auth success parameter to handle plan selection
+      if (validPath === 'pricing') {
+        redirectUrl = `${baseUrl}/pricing?auth=success`;
+      }
+      
+      console.log('🔄 Starting Google OAuth with redirect URL:', redirectUrl);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -196,8 +145,10 @@ const AuthPage = () => {
         throw error;
       }
 
+      // Set success message while redirecting
       setSuccess('Redirecting to Google...');
-      // The redirect will happen automatically, no need to manually redirect
+      
+      // The redirect will happen automatically via Supabase
     } catch (error: any) {
       console.error('💥 Google sign-in error:', error);
       
@@ -206,6 +157,8 @@ const AuthPage = () => {
         setError('Unable to sign in with Google. Please check your Google account settings.');
       } else if (error.message?.includes('OAUTH_CONFIGURATION_NOT_FOUND')) {
         setError('Google sign-in is not properly configured. Please contact support.');
+      } else if (error.message?.includes('redirectTo')) {
+        setError('OAuth redirect configuration error. Please contact support.');
       } else {
         setError(error.message || 'Failed to sign in with Google. Please try again or use email/password.');
       }
@@ -280,8 +233,8 @@ const AuthPage = () => {
     }
   };
 
-  // Show loading state during auth loading or OAuth callback
-  if (authLoading || (user && !oauthCallbackHandled)) {
+  // Show loading state during auth loading
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <ParticleBackground particleCount={20} color="#3B82F6" speed={0.2} />
@@ -292,33 +245,7 @@ const AuthPage = () => {
           >
             <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4" />
           </motion.div>
-          <p className="text-gray-600">
-            {user ? 'Setting up your session...' : 'Loading...'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // If we're handling OAuth callback, show success message
-  if (oauthCallbackHandled && success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <ParticleBackground particleCount={30} color="#10B981" speed={0.3} />
-        <div className="text-center relative z-10">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", duration: 0.6 }}
-          >
-            <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
-          </motion.div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Successful!</h2>
-          <p className="text-gray-600 mb-4">{success}</p>
-          <div className="flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-blue-600 animate-spin mr-2" />
-            <span className="text-blue-600">Redirecting you now...</span>
-          </div>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
@@ -603,3 +530,4 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+</action>
