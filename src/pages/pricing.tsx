@@ -9,6 +9,10 @@ import AnimatedCounter from '../components/advanced/AnimatedCounter';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import MorphingButton from '../components/advanced/MorphingButton';
 import InsightTooltip from '../components/InsightTooltip';
+import { SubscriptionService } from '../lib/subscriptionService';
+import { SubscriptionPlan, BillingCycle } from '../types/subscription';
+import { useAuth } from '../hooks/useAuth';
+import getStripe from '../lib/stripeClient';
 import { 
   ArrowLeft, 
   Check, 
@@ -32,93 +36,32 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Mock subscription plans since Stripe isn't set up yet
-const mockPlans = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Perfect for validating your startup idea',
-    price_monthly: 0,
-    price_yearly: 0,
-    features: [
-      '3 startup validations per month',
-      'Basic market analysis',
-      'Competitor research',
-      'Email support',
-      'Community access'
-    ],
-    max_companies: 3,
-    max_validations_monthly: 3,
-    max_kpi_reports: 10,
-    vc_matching_enabled: false,
-    sso_enabled: false,
-    priority_support: false,
-    api_access: false,
-    custom_integrations: false,
-    is_active: true,
-    sort_order: 1
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'For growing startups ready to scale',
-    price_monthly: 29,
-    price_yearly: 24,
-    features: [
-      'Unlimited startup validations',
-      'Advanced market analysis',
-      'Detailed competitor insights',
-      'KPI tracking & benchmarks',
-      'Pitch deck builder',
-      'Priority email support',
-      '14-day free trial'
-    ],
-    max_companies: null,
-    max_validations_monthly: null,
-    max_kpi_reports: null,
-    vc_matching_enabled: true,
-    sso_enabled: false,
-    priority_support: true,
-    api_access: false,
-    custom_integrations: false,
-    is_active: true,
-    sort_order: 2
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    description: 'For VCs, accelerators, and large teams',
-    price_monthly: 99,
-    price_yearly: 79,
-    features: [
-      'Everything in Professional',
-      'Advanced VC matching',
-      'Team collaboration tools',
-      'SSO & user management',
-      'Custom integrations',
-      'Dedicated account manager',
-      'Phone & priority support',
-      '30-day free trial'
-    ],
-    max_companies: null,
-    max_validations_monthly: null,
-    max_kpi_reports: null,
-    vc_matching_enabled: true,
-    sso_enabled: true,
-    priority_support: true,
-    api_access: true,
-    custom_integrations: true,
-    is_active: true,
-    sort_order: 3
-  }
-];
-
 const PricingPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [plans] = useState(mockPlans);
-  const [loading, setLoading] = useState(false);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const plansData = await SubscriptionService.getPlans();
+      setPlans(plansData);
+    } catch (err) {
+      console.error('Error loading plans:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load plans');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -135,65 +78,121 @@ const PricingPage = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  const handlePlanSelect = async (plan: typeof mockPlans[0]) => {
+  const handlePlanSelect = async (plan: SubscriptionPlan) => {
+    if (!user) {
+      // Save the selected plan and redirect to sign up
+      localStorage.setItem('selectedPlan', JSON.stringify({ planId: plan.id, billingCycle }));
+      navigate('/auth?redirect=pricing');
+      return;
+    }
+
     setSelectedPlan(plan.id);
-    setLoading(true);
     
     try {
-      // Simulate loading for UX
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       if (plan.price_monthly === 0) {
-        // Free plan - navigate to upload page
-        navigate('/upload');
-      } else if (plan.name === 'Enterprise') {
-        // Enterprise plan - simulate contact redirect
-        window.open('mailto:sales@vcready.com?subject=Enterprise Plan Inquiry', '_blank');
+        // Free plan - create subscription record and redirect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        navigate('/dashboard?plan=starter');
+        return;
+      }
+
+      if (plan.name === 'Enterprise') {
+        // Enterprise plan - open contact email
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        window.open('mailto:sales@vcready.com?subject=Enterprise Plan Inquiry&body=Hi! I\'m interested in the Enterprise plan. Please reach out to discuss pricing and features.', '_blank');
         setSelectedPlan(null);
-        setLoading(false);
+        return;
+      }
+
+      // Create Stripe checkout session
+      const checkoutData = await SubscriptionService.createCheckoutSession(
+        plan.id,
+        billingCycle,
+        user.id,
+        `${window.location.origin}/dashboard?success=true&plan=${plan.name.toLowerCase()}`,
+        `${window.location.origin}/pricing?canceled=true`
+      );
+
+      // Redirect to Stripe Checkout
+      const stripe = await getStripe();
+      if (stripe && checkoutData.sessionId) {
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: checkoutData.sessionId,
+        });
+        
+        if (error) {
+          console.error('Stripe checkout error:', error);
+          throw new Error(error.message);
+        }
+      } else if (checkoutData.url) {
+        window.location.href = checkoutData.url;
       } else {
-        // Paid plans - for now just navigate to dashboard
-        // In the future, this will integrate with Stripe
-        navigate('/dashboard');
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Error selecting plan:', error);
+      console.error('Error creating checkout session:', error);
+      setError(error instanceof Error ? error.message : 'Failed to start checkout');
+    } finally {
       setSelectedPlan(null);
-      setLoading(false);
     }
   };
 
-  const getPriceDisplay = (plan: typeof mockPlans[0]) => {
+  const getPriceDisplay = (plan: SubscriptionPlan) => {
     const price = billingCycle === 'monthly' ? plan.price_monthly : plan.price_yearly;
     if (price === 0) return 'Free';
     return `$${price}`;
   };
 
-  const getSavingsDisplay = (plan: typeof mockPlans[0]) => {
+  const getSavingsDisplay = (plan: SubscriptionPlan) => {
     if (plan.price_monthly === 0 || billingCycle === 'monthly') return '';
     const monthlyCost = plan.price_monthly * 12;
-    const yearlyCost = plan.price_yearly * 12;
+    const yearlyCost = plan.price_yearly;
     const savings = Math.round(((monthlyCost - yearlyCost) / monthlyCost) * 100);
-    return `Save ${savings}%`;
+    return savings > 0 ? `Save ${savings}%` : '';
   };
 
-  const getPlanIcon = (plan: typeof mockPlans[0]) => {
+  const getPlanIcon = (plan: SubscriptionPlan) => {
     if (plan.name === 'Starter') return Rocket;
     if (plan.name === 'Professional') return TrendingUp;
     if (plan.name === 'Enterprise') return Crown;
     return Building2;
   };
 
-  const getPlanGlowColor = (plan: typeof mockPlans[0]) => {
+  const getPlanGlowColor = (plan: SubscriptionPlan) => {
     if (plan.name === 'Starter') return 'emerald';
     if (plan.name === 'Professional') return 'blue';
     if (plan.name === 'Enterprise') return 'purple';
     return 'blue';
   };
 
-  const isPopular = (plan: typeof mockPlans[0]) => {
+  const isPopular = (plan: SubscriptionPlan) => {
     return plan.name === 'Professional';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading pricing plans...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-600 mb-4">Error loading pricing plans</div>
+            <p className="text-sm text-gray-600 mb-4">{error}</p>
+            <Button onClick={loadPlans}>Try Again</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -290,7 +289,7 @@ const PricingPage = () => {
               <motion.div key={plan.id} variants={itemVariants}>
                 <InsightTooltip
                   title={plan.name}
-                  description={plan.description}
+                  description={plan.description || ''}
                   insight={`Perfect for ${plan.name === 'Starter' ? 'early-stage validation' : plan.name === 'Professional' ? 'growing startups' : 'enterprise operations'}`}
                   actionable={`${plan.features.length} features included`}
                 >
@@ -361,7 +360,7 @@ const PricingPage = () => {
                           className={`w-full py-3 ${popular ? 'hover-glow' : ''}`}
                           successText={plan.price_monthly === 0 ? "Welcome!" : plan.name === 'Enterprise' ? "We'll be in touch!" : "Starting trial..."}
                           onClick={() => handlePlanSelect(plan)}
-                          disabled={selectedPlan === plan.id || loading}
+                          disabled={selectedPlan === plan.id}
                         >
                           {selectedPlan === plan.id ? (
                             <div className="flex items-center">
