@@ -12,7 +12,7 @@ import { Separator } from '../components/ui/separator';
 import GlowingCard from '../components/advanced/GlowingCard';
 import ParticleBackground from '../components/advanced/ParticleBackground';
 import MorphingButton from '../components/advanced/MorphingButton';
-import { ArrowLeft, Mail, Lock, User, Sparkles, Zap, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Sparkles, Zap, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -94,11 +94,15 @@ const AuthPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('🔘 Google sign-in button clicked!'); // Debug log
+    
     setGoogleLoading(true);
     setError('');
     setSuccess('');
 
     try {
+      console.log('🔄 Starting Google OAuth...');
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -108,13 +112,18 @@ const AuthPage = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('📊 Google OAuth response:', { data, error });
+
+      if (error) {
+        console.error('❌ Google OAuth error:', error);
+        throw error;
+      }
 
       // The redirect will happen automatically
       setSuccess('Redirecting to Google...');
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      setError(error.message || 'Failed to sign in with Google');
+      console.error('💥 Google sign-in error:', error);
+      setError(error.message || 'Failed to sign in with Google. Please check your Supabase configuration.');
       setGoogleLoading(false);
     }
   };
@@ -251,18 +260,22 @@ const AuthPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Google Sign In Button */}
-                <MorphingButton
+                {/* Google Sign In Button - Using regular Button instead of MorphingButton for debugging */}
+                <Button
                   type="button"
                   variant="outline"
-                  className="w-full py-3 border-2 hover:bg-gray-50 transition-all duration-200"
-                  onClick={handleGoogleSignIn}
+                  className="w-full py-3 border-2 hover:bg-gray-50 transition-all duration-200 relative"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Button click event triggered');
+                    handleGoogleSignIn();
+                  }}
                   disabled={googleLoading || loading}
-                  successText="Redirecting to Google..."
                 >
                   {googleLoading ? (
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-3" />
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin mr-3" />
                       Connecting to Google...
                     </div>
                   ) : (
@@ -277,7 +290,14 @@ const AuthPage = () => {
                       Continue with Google
                     </div>
                   )}
-                </MorphingButton>
+                </Button>
+
+                {/* Debug Information - Remove this after testing */}
+                <div className="text-xs text-gray-500 text-center space-y-1">
+                  <div>Google Loading: {googleLoading ? 'Yes' : 'No'}</div>
+                  <div>Form Loading: {loading ? 'Yes' : 'No'}</div>
+                  <div>Button Disabled: {(googleLoading || loading) ? 'Yes' : 'No'}</div>
+                </div>
 
                 {/* Divider */}
                 <div className="relative">
